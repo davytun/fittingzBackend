@@ -3,32 +3,46 @@ const { validationResult } = require("express-validator");
 
 const prisma = new PrismaClient();
 
-// Ultra-reliable date parser
-const parseProjectDate = (dateString, isEndOfDay = false) => {
-  if (!dateString) return null;
+// Nigeria-aware date parser (GMT+1)
+const parseProjectDate = (dateInput, isEndOfDay = false) => {
+  if (!dateInput) return null;
 
-  // First validate the basic format (YYYY-MM-DD)
-  const dateRegex = /^(\d{4})-(\d{2})-(\d{2})$/;
-  if (!dateRegex.test(dateString)) {
-    throw new Error(
-      `Invalid date format. Expected YYYY-MM-DD but got ${dateString}`
-    );
+  // Handle both string and Date object inputs
+  let dateString;
+  if (dateInput instanceof Date) {
+    // Convert Date object to YYYY-MM-DD string in local time
+    const year = dateInput.getFullYear();
+    const month = String(dateInput.getMonth() + 1).padStart(2, "0");
+    const day = String(dateInput.getDate()).padStart(2, "0");
+    dateString = `${year}-${month}-${day}`;
+  } else if (typeof dateInput === "string") {
+    dateString = dateInput;
+  } else {
+    throw new Error("Invalid date input type");
   }
 
-  // Extract components
-  const [, year, month, day] = dateString.match(dateRegex);
+  // Validate format
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    throw new Error(`Expected YYYY-MM-DD format but got ${dateString}`);
+  }
 
-  // Validate date components
-  const dateObj = new Date(`${year}-${month}-${day}T00:00:00Z`);
-  if (isNaN(dateObj.getTime())) {
+  // Create date in Nigeria time (GMT+1) then convert to UTC
+  const nigeriaOffset = 60; // minutes for GMT+1
+  const date = new Date(dateString);
+  date.setMinutes(date.getMinutes() + nigeriaOffset);
+
+  if (isNaN(date.getTime())) {
     throw new Error(`Invalid date components in ${dateString}`);
   }
 
-  // Create final date in UTC
-  const timePart = isEndOfDay ? "T23:59:59.999Z" : "T00:00:00.000Z";
-  const finalDate = new Date(`${year}-${month}-${day}${timePart}`);
+  // Set time component
+  if (isEndOfDay) {
+    date.setUTCHours(23, 59, 59, 999);
+  } else {
+    date.setUTCHours(0, 0, 0, 0);
+  }
 
-  return finalDate;
+  return date;
 };
 
 exports.createProjectForClient = async (req, res, next) => {
@@ -41,31 +55,38 @@ exports.createProjectForClient = async (req, res, next) => {
   const { name, description, status, startDate, dueDate } = req.body;
   const adminId = req.user.id;
 
+  console.log("Raw input:", {
+    startDate,
+    dueDate,
+    typeStart: typeof startDate,
+    typeDue: typeof dueDate,
+  });
+
   try {
-    // Verify client exists and belongs to admin
+    // Client verification
     const client = await prisma.client.findUnique({ where: { id: clientId } });
     if (!client) return res.status(404).json({ message: "Client not found" });
     if (client.adminId !== adminId)
       return res.status(403).json({ message: "Forbidden" });
 
-    // Parse dates with comprehensive validation
+    // Date parsing with Nigeria timezone awareness
     let parsedStartDate, parsedDueDate;
     try {
       parsedStartDate = startDate ? parseProjectDate(startDate) : null;
       parsedDueDate = dueDate ? parseProjectDate(dueDate, true) : null;
     } catch (dateError) {
       return res.status(400).json({
-        message: "Invalid date input",
+        message: "Date processing error",
         details: dateError.message,
-        expectedFormat: "YYYY-MM-DD",
-        example: "2025-07-15",
+        solution: "Please provide dates as strings in YYYY-MM-DD format",
+        example: { startDate: "2025-07-10", dueDate: "2025-07-15" },
       });
     }
 
-    // Validate business logic
+    // Business logic validation
     if (parsedStartDate && parsedDueDate && parsedDueDate < parsedStartDate) {
       return res.status(400).json({
-        message: "Due date cannot be before start date",
+        message: "Due date must be after start date",
         startDate: parsedStartDate.toISOString(),
         dueDate: parsedDueDate.toISOString(),
       });
@@ -88,9 +109,7 @@ exports.createProjectForClient = async (req, res, next) => {
   } catch (error) {
     console.error("Project creation error:", error);
     if (error.code === "P2003") {
-      return res
-        .status(400)
-        .json({ message: "Invalid client or admin reference" });
+      return res.status(400).json({ message: "Invalid client reference" });
     }
     next(error);
   }
