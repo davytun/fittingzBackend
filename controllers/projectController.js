@@ -3,44 +3,34 @@ const { validationResult } = require("express-validator");
 
 const prisma = new PrismaClient();
 
-const parseDate = (dateString, endOfDay = false) => {
+// Ultra-reliable date parser
+const parseProjectDate = (dateString, isEndOfDay = false) => {
   if (!dateString) return null;
 
-  // First validate the format is YYYY-MM-DD
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    console.error("Invalid date format received:", dateString);
-    return null;
+  // First validate the basic format (YYYY-MM-DD)
+  const dateRegex = /^(\d{4})-(\d{2})-(\d{2})$/;
+  if (!dateRegex.test(dateString)) {
+    throw new Error(
+      `Invalid date format. Expected YYYY-MM-DD but got ${dateString}`
+    );
   }
 
-  try {
-    // Create date in local timezone first
-    const date = new Date(dateString);
+  // Extract components
+  const [, year, month, day] = dateString.match(dateRegex);
 
-    // Handle invalid dates
-    if (isNaN(date.getTime())) {
-      console.error("Invalid date created from:", dateString);
-      return null;
-    }
-
-    // Convert to ISO string and parse again to ensure consistency
-    const isoString = endOfDay
-      ? `${dateString}T23:59:59.999Z`
-      : `${dateString}T00:00:00.000Z`;
-
-    const finalDate = new Date(isoString);
-    if (isNaN(finalDate.getTime())) {
-      console.error("Failed to create final date from:", isoString);
-      return null;
-    }
-
-    return finalDate;
-  } catch (error) {
-    console.error("Date parsing error:", error);
-    return null;
+  // Validate date components
+  const dateObj = new Date(`${year}-${month}-${day}T00:00:00Z`);
+  if (isNaN(dateObj.getTime())) {
+    throw new Error(`Invalid date components in ${dateString}`);
   }
+
+  // Create final date in UTC
+  const timePart = isEndOfDay ? "T23:59:59.999Z" : "T00:00:00.000Z";
+  const finalDate = new Date(`${year}-${month}-${day}${timePart}`);
+
+  return finalDate;
 };
 
-// Create a new project for a specific client
 exports.createProjectForClient = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -51,42 +41,37 @@ exports.createProjectForClient = async (req, res, next) => {
   const { name, description, status, startDate, dueDate } = req.body;
   const adminId = req.user.id;
 
-  console.log("Raw dates received:", { startDate, dueDate });
-
   try {
-    // Verify client exists and belongs to the admin
-    const client = await prisma.client.findUnique({
-      where: { id: clientId },
-    });
+    // Verify client exists and belongs to admin
+    const client = await prisma.client.findUnique({ where: { id: clientId } });
+    if (!client) return res.status(404).json({ message: "Client not found" });
+    if (client.adminId !== adminId)
+      return res.status(403).json({ message: "Forbidden" });
 
-    if (!client) {
-      return res.status(404).json({ message: "Client not found" });
-    }
-    if (client.adminId !== adminId) {
-      return res
-        .status(403)
-        .json({ message: "Forbidden: You do not have access to this client" });
-    }
-
-    // Parse dates with improved function
-    const parsedStartDate = parseDate(startDate);
-    const parsedDueDate = parseDate(dueDate, true);
-
-    console.log("Parsed dates:", { parsedStartDate, parsedDueDate });
-
-    if (startDate && !parsedStartDate) {
+    // Parse dates with comprehensive validation
+    let parsedStartDate, parsedDueDate;
+    try {
+      parsedStartDate = startDate ? parseProjectDate(startDate) : null;
+      parsedDueDate = dueDate ? parseProjectDate(dueDate, true) : null;
+    } catch (dateError) {
       return res.status(400).json({
-        message: "Invalid start date format",
-        details: "Please provide date in YYYY-MM-DD format",
-      });
-    }
-    if (dueDate && !parsedDueDate) {
-      return res.status(400).json({
-        message: "Invalid due date format",
-        details: "Please provide date in YYYY-MM-DD format",
+        message: "Invalid date input",
+        details: dateError.message,
+        expectedFormat: "YYYY-MM-DD",
+        example: "2025-07-15",
       });
     }
 
+    // Validate business logic
+    if (parsedStartDate && parsedDueDate && parsedDueDate < parsedStartDate) {
+      return res.status(400).json({
+        message: "Due date cannot be before start date",
+        startDate: parsedStartDate.toISOString(),
+        dueDate: parsedDueDate.toISOString(),
+      });
+    }
+
+    // Create project
     const project = await prisma.project.create({
       data: {
         name,
@@ -105,9 +90,7 @@ exports.createProjectForClient = async (req, res, next) => {
     if (error.code === "P2003") {
       return res
         .status(400)
-        .json({
-          message: "Invalid client or admin reference for project creation.",
-        });
+        .json({ message: "Invalid client or admin reference" });
     }
     next(error);
   }
