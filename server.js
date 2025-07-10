@@ -6,8 +6,16 @@ const errorHandler = require("./middlewares/errorHandler");
 dotenv.config();
 
 const app = express();
-
 app.set("trust proxy", 1);
+
+// Health check endpoint (register early)
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
 
 // Load everything
 loaders(app);
@@ -21,14 +29,20 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Backend API!");
 });
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  });
+const server = app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+
+  // Start cron jobs AFTER server is ready
+  if (process.env.NODE_ENV === "production") {
+    const cronManager = require("./loaders/crons");
+    cronManager.init();
+  }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  server.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
 });
