@@ -3,15 +3,37 @@ const { validationResult } = require("express-validator");
 
 const prisma = new PrismaClient();
 
-// Helper function to parse date strings safely
-const parseDate = (dateString, timeOfDay = "00:00:00.000Z") => {
+const parseDate = (dateString, endOfDay = false) => {
   if (!dateString) return null;
+
+  // First validate the format is YYYY-MM-DD
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    console.error("Invalid date format received:", dateString);
+    return null;
+  }
+
   try {
-    // Ensure the date string is in YYYY-MM-DD format
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-      throw new Error("Invalid date format. Expected YYYY-MM-DD");
+    // Create date in local timezone first
+    const date = new Date(dateString);
+
+    // Handle invalid dates
+    if (isNaN(date.getTime())) {
+      console.error("Invalid date created from:", dateString);
+      return null;
     }
-    return new Date(`${dateString}T${timeOfDay}`);
+
+    // Convert to ISO string and parse again to ensure consistency
+    const isoString = endOfDay
+      ? `${dateString}T23:59:59.999Z`
+      : `${dateString}T00:00:00.000Z`;
+
+    const finalDate = new Date(isoString);
+    if (isNaN(finalDate.getTime())) {
+      console.error("Failed to create final date from:", isoString);
+      return null;
+    }
+
+    return finalDate;
   } catch (error) {
     console.error("Date parsing error:", error);
     return null;
@@ -29,14 +51,7 @@ exports.createProjectForClient = async (req, res, next) => {
   const { name, description, status, startDate, dueDate } = req.body;
   const adminId = req.user.id;
 
-  // Debug logging
-  console.log("Creating project with:", {
-    name,
-    startDate,
-    dueDate,
-    clientId,
-    adminId,
-  });
+  console.log("Raw dates received:", { startDate, dueDate });
 
   try {
     // Verify client exists and belongs to the admin
@@ -53,15 +68,23 @@ exports.createProjectForClient = async (req, res, next) => {
         .json({ message: "Forbidden: You do not have access to this client" });
     }
 
-    // Parse dates with proper error handling
-    const parsedStartDate = parseDate(startDate, "00:00:00.000Z");
-    const parsedDueDate = parseDate(dueDate, "23:59:59.999Z");
+    // Parse dates with improved function
+    const parsedStartDate = parseDate(startDate);
+    const parsedDueDate = parseDate(dueDate, true);
+
+    console.log("Parsed dates:", { parsedStartDate, parsedDueDate });
 
     if (startDate && !parsedStartDate) {
-      return res.status(400).json({ message: "Invalid start date format" });
+      return res.status(400).json({
+        message: "Invalid start date format",
+        details: "Please provide date in YYYY-MM-DD format",
+      });
     }
     if (dueDate && !parsedDueDate) {
-      return res.status(400).json({ message: "Invalid due date format" });
+      return res.status(400).json({
+        message: "Invalid due date format",
+        details: "Please provide date in YYYY-MM-DD format",
+      });
     }
 
     const project = await prisma.project.create({
@@ -139,12 +162,9 @@ exports.getProjectsByClientId = async (req, res, next) => {
       return res.status(404).json({ message: "Client not found" });
     }
     if (client.adminId !== adminId) {
-      return res
-        .status(403)
-        .json({
-          message:
-            "Forbidden: You do not have access to this client's projects",
-        });
+      return res.status(403).json({
+        message: "Forbidden: You do not have access to this client's projects",
+      });
     }
 
     const projects = await prisma.project.findMany({
