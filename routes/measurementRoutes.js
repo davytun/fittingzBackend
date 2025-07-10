@@ -71,7 +71,11 @@ router.use(authenticateJwt);
 
 // Validation for client ID in params
 const validateClientIdInParam = [
-    param('clientId').isString().notEmpty().withMessage('Client ID is required in URL path.')
+    param('clientId')
+        .isString()
+        .notEmpty()
+        .isLength({ min: 25, max: 30 }) // CUID2 length validation
+        .withMessage('Invalid client ID format')
 ];
 
 // Validation for measurement fields
