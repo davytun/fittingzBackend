@@ -32,8 +32,8 @@ exports.createProjectForClient = async (req, res, next) => {
                 name,
                 description,
                 status: status || ProjectStatus.PENDING, // Default if not provided
-                startDate: startDate ? new Date(startDate) : null,
-                dueDate: dueDate ? new Date(dueDate) : null,
+                startDate: startDate ? new Date(startDate + 'T00:00:00Z') : null,
+                dueDate: dueDate ? new Date(dueDate + 'T23:59:59Z') : null,
                 clientId,
                 adminId,
             },

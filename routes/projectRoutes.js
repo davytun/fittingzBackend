@@ -118,7 +118,11 @@ router.use(authenticateJwt);
 
 // Validation for client ID in params (used when creating/listing projects for a client)
 const validateClientIdInParam = [
-    param('clientId').isString().notEmpty().withMessage('Client ID parameter is required.')
+    param('clientId')
+        .isString()
+        .notEmpty()
+        .isLength({ min: 25, max: 30 })
+        .withMessage('Invalid client ID format. Must be 25-30 characters.')
 ];
 
 // Validation for project ID in params
