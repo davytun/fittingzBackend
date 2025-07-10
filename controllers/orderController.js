@@ -227,11 +227,9 @@ exports.getOrdersByClientId = async (req, res, next) => {
       return res.status(404).json({ message: "Client not found" });
     }
     if (client.adminId !== adminId) {
-      return res
-        .status(403)
-        .json({
-          message: "Forbidden: You do not have access to this client's orders",
-        });
+      return res.status(403).json({
+        message: "Forbidden: You do not have access to this client's orders",
+      });
     }
 
     const orders = await prisma.order.findMany({
@@ -295,26 +293,50 @@ exports.getOrderById = async (req, res, next) => {
 exports.updateOrderStatus = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    return res.status(400).json({
+      message: "Validation errors",
+      errors: errors.array(),
+      example: {
+        status: "PROCESSING",
+      },
+    });
   }
 
   const { orderId } = req.params;
   const { status } = req.body;
   const adminId = req.user.id;
 
-  try {
-    const existingOrder = await prisma.order.findUnique({
-      where: { id: orderId },
+  // Validate status is a valid OrderStatus
+  if (!Object.values(OrderStatus).includes(status)) {
+    return res.status(400).json({
+      message: "Invalid order status",
+      validStatuses: Object.values(OrderStatus),
+      received: status,
     });
-    if (!existingOrder) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-    if (existingOrder.adminId !== adminId) {
-      return res
-        .status(403)
-        .json({ message: "Forbidden: You cannot update this order's status" });
+  }
+
+  try {
+    // Verify order exists and belongs to admin
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, adminId: true },
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+        orderId,
+      });
     }
 
+    if (order.adminId !== adminId) {
+      return res.status(403).json({
+        message: "Forbidden",
+        details: "You cannot update this order",
+      });
+    }
+
+    // Update status
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: { status },
@@ -323,9 +345,17 @@ exports.updateOrderStatus = async (req, res, next) => {
         project: { select: { name: true } },
       },
     });
-    res.status(200).json(updatedOrder);
+
+    res.status(200).json({
+      message: "Order status updated successfully",
+      order: updatedOrder,
+    });
   } catch (error) {
-    next(error);
+    console.error("Order status update error:", error);
+    res.status(500).json({
+      message: "Failed to update order status",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };
 
@@ -374,12 +404,9 @@ exports.updateOrderDetails = async (req, res, next) => {
         project.adminId !== adminId ||
         project.clientId !== existingOrder.clientId
       ) {
-        return res
-          .status(403)
-          .json({
-            message:
-              "Forbidden: Project does not belong to this client or admin",
-          });
+        return res.status(403).json({
+          message: "Forbidden: Project does not belong to this client or admin",
+        });
       }
     }
 
@@ -389,11 +416,9 @@ exports.updateOrderDetails = async (req, res, next) => {
         where: { orderNumber, adminId, NOT: { id: orderId } },
       });
       if (conflictingOrder) {
-        return res
-          .status(400)
-          .json({
-            message: `Order number '${orderNumber}' already exists for this admin.`,
-          });
+        return res.status(400).json({
+          message: `Order number '${orderNumber}' already exists for this admin.`,
+        });
       }
     }
 
