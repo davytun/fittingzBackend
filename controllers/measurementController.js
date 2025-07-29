@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { validationResult } = require('express-validator');
+const { getIO } = require("../socket");
 
 const prisma = new PrismaClient();
 
@@ -37,6 +38,7 @@ exports.addOrUpdateMeasurement = async (req, res, next) => {
         });
 
         res.status(200).json(measurement);
+        getIO().emit("measurement_updated", measurement);
     } catch (error) {
         // Handle potential errors, e.g., if `fields` is not valid JSON (though Prisma might handle this)
         if (error.code === 'P2002' && error.meta?.target?.includes('clientId')) {
@@ -69,8 +71,15 @@ exports.getMeasurementsByClientId = async (req, res, next) => {
         });
 
         if (!measurement) {
-            // If no measurements found, could return 404 or an empty object/default state
-            return res.status(404).json({ message: 'Measurements not found for this client. Please add them first.' });
+            // Return a default/empty measurement object for this client
+            return res.status(200).json({
+                id: null,
+                clientId: clientId,
+                fields: {},
+                createdAt: null,
+                updatedAt: null,
+                client: { name: client.name }
+            });
         }
 
         res.status(200).json(measurement);
@@ -108,6 +117,7 @@ exports.deleteMeasurementsByClientId = async (req, res, next) => {
         });
 
         res.status(200).json({ message: 'Measurements deleted successfully for client.' });
+        getIO().emit("measurement_deleted", { clientId });
     } catch (error) {
         if (error.code === 'P2025') { // Prisma error: "Record to delete not found"
             return res.status(404).json({ message: 'No measurements found for this client to delete or already deleted.' });

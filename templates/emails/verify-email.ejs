@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verify Your Email Address</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #f4f4f4;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+      "
+    >
+      <!-- Header -->
+      <tr>
+        <td
+          style="background-color: #4a90e2; padding: 20px; text-align: center"
+        >
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px">
+            Fashion Designer App
+          </h1>
+        </td>
+      </tr>
+      <!-- Body -->
+      <tr>
+        <td style="padding: 30px">
+          <h2 style="color: #333333; font-size: 20px; margin: 0 0 20px">
+            Welcome, <%= businessName %>!
+          </h2>
+          <p
+            style="
+              color: #666666;
+              font-size: 16px;
+              line-height: 1.5;
+              margin: 0 0 20px;
+            "
+          >
+            Thank you for joining Fashion Designer App. To complete your
+            registration, please verify your email address using the code below:
+          </p>
+          <div style="text-align: center; margin: 20px 0">
+            <span
+              style="
+                display: inline-block;
+                background-color: #4a90e2;
+                color: #ffffff;
+                font-size: 24px;
+                font-weight: bold;
+                padding: 10px 20px;
+                border-radius: 5px;
+              "
+              ><%= verificationCode %></span
+            >
+          </div>
+          <p
+            style="
+              color: #666666;
+              font-size: 16px;
+              line-height: 1.5;
+              margin: 0 0 20px;
+            "
+          >
+            This code will expire in 15 minutes. If you didn’t request this,
+            please ignore this email.
+          </p>
+        </td>
+      </tr>
+      <!-- Footer -->
+      <tr>
+        <td
+          style="
+            background-color: #f4f4f4;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #666666;
+          "
+        >
+          <p style="margin: 0">
+            Fashion Designer App &copy; <%= new Date().getFullYear() %>
+          </p>
+          <p style="margin: 10px 0">
+            <a
+              href="mailto:support@yourfashionapp.com"
+              style="color: #4a90e2; text-decoration: none"
+              >Contact Us</a
+            >
+            |
+            <a href="#" style="color: #4a90e2; text-decoration: none"
+              >Unsubscribe</a
+            >
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

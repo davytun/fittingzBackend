@@ -1,14 +1,11 @@
+require("dotenv").config({ path: "./.env" });
 const express = require("express");
-const dotenv = require("dotenv");
 const loaders = require("./loaders");
 const errorHandler = require("./middlewares/errorHandler");
-
-dotenv.config();
 
 const app = express();
 app.set("trust proxy", 1);
 
-// Health check endpoint (register early)
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "healthy",
@@ -32,12 +29,46 @@ app.get("/", (req, res) => {
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 
-  // Start cron jobs AFTER server is ready
   if (process.env.NODE_ENV === "production") {
     const cronManager = require("./loaders/crons");
     cronManager.init();
   }
 });
+
+// --- SOCKET.IO INTEGRATION START ---
+const { Server } = require("socket.io");
+const { setIO } = require("./socket");
+const allowedOrigin = process.env.CORS_ALLOWED_ORIGIN || "http://localhost:8080";
+const allowedOrigins = allowedOrigin.split(",").map((origin) => origin.trim());
+const isDevOrTesting = process.env.NODE_ENV !== "production" || process.env.OPEN_CORS === "true";
+
+const io = new Server(server, isDevOrTesting
+  ? {
+      cors: {
+        origin: true,
+        methods: ["GET", "POST"],
+        credentials: true,
+      },
+    }
+  : {
+      cors: {
+        origin: allowedOrigins[0],
+        methods: ["GET", "POST"],
+        credentials: true,
+      },
+    }
+);
+setIO(io);
+
+io.on("connection", (socket) => {
+  console.log("A user connected:", socket.id);
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
+module.exports.io = io;
+// --- SOCKET.IO INTEGRATION END ---
 
 // Graceful shutdown
 process.on("SIGTERM", () => {

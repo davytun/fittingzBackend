@@ -11,69 +11,35 @@ datasource db {
 }
 
 model Admin {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  password        String
-  businessName    String
-  contactPhone    String? // Optional
-  businessAddress String? // Optional
-  clients         Client[]
-  isEmailVerified Boolean   @default(false)
-  // lastLoginIp     String? // Removed
-  // lastLoginAt     DateTime? // Removed
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  password           String
+  businessName       String
+  contactPhone       String? // Optional
+  businessAddress    String? // Optional
+  clients            Client[]
+  styleImages        StyleImage[] // Added relation to StyleImage
+  isEmailVerified    Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   verificationTokens VerificationToken[]
-  loginAttempts      AdminLoginAttempt[] // Relation to login attempts
 
   Project Project[]
-
-  Order Order[]
+  Order   Order[]
+  Event   Event[]
 }
 
 enum TokenType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
-  // LOGIN_VERIFICATION // Removed
-  IP_LOGIN_VERIFICATION // New type for IP-based login verification
-}
-
-// This enum defines the status of an IP login verification attempt
-enum LoginVerificationStatus {
-  PENDING   // Code sent, waiting for user verification
-  VERIFIED  // User successfully verified this login attempt
-  EXPIRED   // Verification code expired
-  FAILED    // User entered wrong code multiple times (optional, if we add attempt limits)
-}
-
-model AdminLoginAttempt {
-  id        String    @id @default(cuid())
-  adminId   String
-  admin     Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
-  ipAddress String
-  userAgent String?   // Store User-Agent for more robust device/browser fingerprinting
-
-  verificationCode        String?   // Hashed verification code for IP login
-  verificationCodeExpiresAt DateTime? // Expiry for the IP login verification code
-  status                  LoginVerificationStatus @default(PENDING)
-
-  verifiedAt DateTime? // Timestamp when this specific attempt was verified
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@index([adminId])
-  @@index([ipAddress])
-  @@index([status])
-  @@index([adminId, ipAddress, status]) // For querying attempts by admin, IP, and status
 }
 
 model VerificationToken {
   id        String    @id @default(cuid())
   token     String    @unique // This will store the hashed token
   type      TokenType
-  email     String    // Email of the user this token is for
-  adminId   String?   // Link to the admin user
+  email     String // Email of the user this token is for
+  adminId   String? // Link to the admin user
   expiresAt DateTime
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -93,27 +59,25 @@ enum ProjectStatus {
 }
 
 model Project {
-  id            String        @id @default(cuid())
-  name          String
-  description   String?
-  status        ProjectStatus @default(PENDING)
-  startDate     DateTime?
-  dueDate       DateTime?     // Changed from endDate to dueDate for clarity
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(PENDING)
+  startDate   DateTime?
+  dueDate     DateTime? // Changed from endDate to dueDate for clarity
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   clientId String
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   adminId String
-  admin   Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade) // Assuming projects are also directly linked to an admin for ownership/scoping
-
-  // Add other relations if needed, e.g., to Order, StyleImage, etc.
+  admin   Admin   @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  Order   Order[]
 
   @@index([clientId])
   @@index([adminId])
   @@index([status])
-  Order Order[]
 }
 
 enum OrderStatus {
@@ -127,15 +91,17 @@ enum OrderStatus {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  orderNumber String      // Consider adding @unique if it should be globally unique, or a compound unique with adminId
-  details     String?
-  price       Decimal     @db.Decimal(10, 2) // Example: 10 digits in total, 2 after decimal
-  currency    String      @default("NGN") // Default currency, adjust as needed
-  dueDate     DateTime?
-  status      OrderStatus @default(PENDING_PAYMENT)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id               String      @id @default(cuid())
+  orderNumber      String
+  details          String?
+  price            Decimal     @db.Decimal(10, 2)
+  currency         String      @default("NGN")
+  dueDate          DateTime?
+  status           OrderStatus @default(PENDING_PAYMENT)
+  deposit          Decimal?    @db.Decimal(10, 2)
+  styleDescription String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   clientId String
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -144,62 +110,108 @@ model Order {
   admin   Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   projectId String?
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull) // Or Restrict if an order must always have a valid project once set
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  styleImages OrderStyleImage[]
 
   @@index([clientId])
   @@index([adminId])
   @@index([projectId])
   @@index([status])
-  @@index([orderNumber]) // Index for faster lookups if orderNumber is queried often
+  @@index([orderNumber])
 }
 
+model OrderStyleImage {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  styleImageId String
+  styleImage   StyleImage @relation(fields: [styleImageId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([orderId, styleImageId])
+  @@index([orderId])
+  @@index([styleImageId])
+}
 
 model Client {
-  id          String        @id @default(cuid())
-  name        String
-  phone       String?
-  email       String? // Added email for client, often useful
-  eventType   String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  admin       Admin         @relation(fields: [adminId], references: [id])
-  adminId     String
+  id           String        @id @default(cuid())
+  name         String
+  phone        String?
+  email        String?
+  eventType    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  admin        Admin         @relation(fields: [adminId], references: [id])
+  adminId      String
   measurements Measurement[]
-  styleImages StyleImage[]
+  styleImages  StyleImage[]
+  Project      Project[]
+  Order        Order[]
+  events       EventClient[]
 
   @@index([adminId])
-  Project Project[]
-  Order Order[]
 }
 
 model Measurement {
   id        String   @id @default(cuid())
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientId  String
-  // Using Json type for dynamic fields like bust, waist, hip, sleeve, etc.
-  // Example: { "bust": 90, "waist": 60, "hip": 90, "sleeveLength": 58 }
   fields    Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([clientId]) // Assuming one set of measurements per client for simplicity, can be removed if multiple are needed.
-                       // If multiple measurement instances are needed per client (e.g. over time),
-                       // then this unique constraint should be removed and perhaps a 'measurementDate' or 'version' field added.
-                       // For now, sticking to one active measurement set.
+  @@unique([clientId])
   @@index([clientId])
 }
 
 model StyleImage {
   id          String   @id @default(cuid())
-  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId    String
-  imageUrl    String   // Cloudinary URL
-  publicId    String   // Cloudinary public_id for deletion/management
-  category    String?  // e.g., Traditional, Wedding, Casual - Now optional
+  client      Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId    String? // Made optional to support admin-owned images
+  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminId     String // Added to link images to admin
+  imageUrl    String
+  publicId    String
+  category    String?
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  orderStyleImages OrderStyleImage[]
+
   @@index([clientId])
+  @@index([adminId])
   @@index([category])
+}
+
+model Event {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  eventDate   DateTime?
+  location    String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  adminId     String
+  admin       Admin         @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  clients     EventClient[]
+
+  @@index([adminId])
+}
+
+model EventClient {
+  id        String   @id @default(cuid())
+  eventId   String
+  clientId  String
+  role      String?
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, clientId])
+  @@index([eventId])
+  @@index([clientId])
 }

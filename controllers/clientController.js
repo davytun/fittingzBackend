@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { validationResult } = require('express-validator');
+const { getIO } = require("../socket");
 
 const prisma = new PrismaClient();
 
@@ -30,6 +31,7 @@ exports.createClient = async (req, res, next) => {
             },
         });
         res.status(201).json(client);
+        getIO().emit("client_created", client);
     } catch (error) {
         if (error.code === 'P2025') { // Prisma error code for record to connect not found
             return res.status(400).json({ message: "Admin user not found for creating client."})
@@ -149,6 +151,7 @@ exports.updateClient = async (req, res, next) => {
             },
         });
         res.status(200).json(updatedClient);
+        getIO().emit("client_updated", updatedClient);
     } catch (error) {
         next(error);
     }
@@ -179,8 +182,8 @@ exports.deleteClient = async (req, res, next) => {
         await prisma.client.delete({
             where: { id },
         });
-
         res.status(200).json({ message: 'Client deleted successfully' });
+        getIO().emit("client_deleted", { id });
     } catch (error) {
         if (error.code === 'P2025') { // Prisma error for record to delete not found
              return res.status(404).json({ message: 'Client not found or already deleted.' });

@@ -120,30 +120,7 @@ const router = express.Router();
  *                 example: "body"
  *         errorType:
  *           type: string
- *           example: IP_VERIFICATION_REQUIRED
- *     VerifyLoginIpRequest:
- *       type: object
- *       required:
- *         - email
- *         - loginVerificationCode
- *       properties:
- *         email:
- *           type: string
- *           format: email
- *           example: admin@example.com
- *         loginVerificationCode:
- *           type: string
- *           example: "654321"
- *           description: The 6-digit code sent to the admin's email.
- *     ResendLoginIpVerificationRequest:
- *       type: object
- *       required:
- *         - email
- *       properties:
- *         email:
- *           type: string
- *           format: email
- *           example: admin@example.com
+ *           example: EMAIL_NOT_VERIFIED
  *   requestBodies:
  *     AdminRegistrationBody:
  *       description: Admin credentials for registration.
@@ -159,20 +136,6 @@ const router = express.Router();
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/AdminCredentials'
- *     VerifyLoginIpBody:
- *       description: Credentials for verifying a login from a new IP.
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/VerifyLoginIpRequest'
- *     ResendLoginIpVerificationBody:
- *       description: Email for resending login IP verification code.
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ResendLoginIpVerificationRequest'
  * tags:
  *   name: Authentication
  *   description: Admin authentication and authorization
@@ -225,24 +188,6 @@ const validateVerifyEmailInput = [
 ];
 
 const validateResendVerificationEmailInput = [
-  body("email")
-    .isEmail()
-    .withMessage("Please enter a valid email address.")
-    .normalizeEmail(),
-];
-
-const validateVerifyLoginIpInput = [
-  body("email")
-    .isEmail()
-    .withMessage("Please enter a valid email address.")
-    .normalizeEmail(),
-  body("loginVerificationCode")
-    .isString()
-    .isLength({ min: 6, max: 6 })
-    .withMessage("Login verification code must be 6 characters long."),
-];
-
-const validateResendLoginIpVerificationInput = [
   body("email")
     .isEmail()
     .withMessage("Please enter a valid email address.")
@@ -457,98 +402,6 @@ router.post(
   "/resend-verification-email",
   validateResendVerificationEmailInput,
   authController.resendVerificationEmail
-);
-
-// @route   POST /api/auth/verify-login-ip
-// @desc    Verify a login attempt from a new IP address
-// @access  Public
-/**
- * @swagger
- * /api/auth/verify-login-ip:
- *   post:
- *     summary: Verify a login attempt from a new IP address
- *     tags: [Authentication]
- *     description: Verifies a login attempt using a code sent to the admin's email due to a new IP address detection.
- *     requestBody:
- *       $ref: '#/components/requestBodies/VerifyLoginIpBody'
- *     responses:
- *       '200':
- *         description: Login IP verified successfully. JWT token issued.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/AdminLoginSuccessResponse'
- *       '400':
- *         description: Bad request (e.g., validation error, invalid code, expired code).
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       '404':
- *         description: Admin not found with this email.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       '500':
- *         description: Internal server error.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-router.post(
-  "/verify-login-ip",
-  validateVerifyLoginIpInput,
-  authController.verifyLoginIp
-);
-
-// @route   POST /api/auth/resend-login-ip-verification
-// @desc    Resend the login IP verification code
-// @access  Public
-/**
- * @swagger
- * /api/auth/resend-login-ip-verification:
- *   post:
- *     summary: Resend login IP verification code
- *     tags: [Authentication]
- *     description: Resends a new verification code to an admin's email if their login attempt from a new IP was challenged.
- *     requestBody:
- *       $ref: '#/components/requestBodies/ResendLoginIpVerificationBody'
- *     responses:
- *       '200':
- *         description: Login IP verification email sent successfully.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: A new login verification code has been sent to your email.
- *       '400':
- *         description: Bad request (e.g., validation error, no active login verification pending).
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       '404':
- *         description: Admin not found with this email.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       '500':
- *         description: Internal server error (e.g., failed to send email).
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-router.post(
-  "/resend-login-ip-verification",
-  validateResendLoginIpVerificationInput,
-  authController.resendLoginIpVerificationCode
 );
 
 module.exports = router;

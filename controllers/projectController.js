@@ -1,5 +1,6 @@
 const { PrismaClient, ProjectStatus } = require("@prisma/client");
 const { validationResult } = require("express-validator");
+const { getIO } = require("../socket");
 
 const prisma = new PrismaClient();
 
@@ -106,6 +107,7 @@ exports.createProjectForClient = async (req, res, next) => {
     });
 
     res.status(201).json(project);
+    getIO().emit("project_created", project);
   } catch (error) {
     console.error("Project creation error:", error);
     if (error.code === "P2003") {
@@ -263,6 +265,7 @@ exports.updateProject = async (req, res, next) => {
       include: { client: { select: { name: true, id: true } } },
     });
     res.status(200).json(updatedProject);
+    getIO().emit("project_updated", updatedProject);
   } catch (error) {
     // Handle specific Prisma errors if needed, e.g., P2025 (Record to update not found)
     next(error);
@@ -293,6 +296,7 @@ exports.deleteProject = async (req, res, next) => {
     });
 
     res.status(200).json({ message: "Project deleted successfully" });
+    getIO().emit("project_deleted", { id: projectId });
   } catch (error) {
     if (error.code === "P2025") {
       // Record to delete not found

@@ -218,6 +218,20 @@ const validateCreateOrderInput = [
     .isString()
     .trim()
     .withMessage("Project ID must be a string if provided."),
+  body("deposit")
+    .optional({ checkFalsy: true })
+    .isDecimal()
+    .withMessage("Deposit must be a valid decimal number if provided.")
+    .toFloat(),
+  body("styleDescription")
+    .optional({ checkFalsy: true })
+    .isString()
+    .trim()
+    .withMessage("Style description must be a string if provided."),
+  body("styleImageIds")
+    .optional()
+    .isArray()
+    .withMessage("Style image IDs must be an array if provided."),
 ];
 
 // Validation for updating order status
@@ -260,6 +274,20 @@ const validateUpdateOrderDetailsInput = [
     .withMessage(
       "Project ID must be a string if provided or empty string to remove."
     ),
+  body("deposit")
+    .optional({ checkFalsy: true })
+    .isDecimal()
+    .withMessage("Deposit must be a valid decimal number if provided.")
+    .toFloat(),
+  body("styleDescription")
+    .optional({ checkFalsy: true })
+    .isString()
+    .trim()
+    .withMessage("Style description must be a string if provided."),
+  body("styleImageIds")
+    .optional()
+    .isArray()
+    .withMessage("Style image IDs must be an array if provided."),
 ];
 
 // @route   POST /api/orders/client/:clientId
