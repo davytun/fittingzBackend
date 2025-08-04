@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+const ejs = require('ejs');
+const path = require('path');
 
 const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, MAIL_FROM } = process.env;
 
@@ -9,7 +11,7 @@ if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
   );
 }
 
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: SMTP_HOST,
   port: parseInt(SMTP_PORT) || 587,
   secure: SMTP_SECURE === 'true',
@@ -51,6 +53,18 @@ const sendEmail = async (to, subject, text, html) => {
   }
 };
 
+const sendTemplateEmail = async (to, subject, templateName, templateData) => {
+  try {
+    const templatePath = path.join(__dirname, '../templates/emails', `${templateName}.ejs`);
+    const html = await ejs.renderFile(templatePath, templateData);
+    return await sendEmail(to, subject, '', html);
+  } catch (error) {
+    console.error('Error rendering email template:', error.message);
+    throw new Error(`Failed to send template email: ${error.message}`);
+  }
+};
+
 module.exports = {
   sendEmail,
+  sendTemplateEmail,
 };
