@@ -25,7 +25,7 @@ const sendEmail = async (to, subject, text, html) => {
     console.error("Resend API key not configured. Cannot send email.");
     throw new Error("Email service not configured.");
   }
-
+  
   try {
     const response = await resend.emails.send({
       from: MAIL_FROM,
