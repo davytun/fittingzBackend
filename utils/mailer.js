@@ -1,15 +1,23 @@
-const { Resend } = require("resend");
+const nodemailer = require('nodemailer');
 
-const { RESEND_API_KEY, MAIL_FROM } = process.env;
+const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, MAIL_FROM } = process.env;
 
 // Basic check for essential mail configuration
-if (!RESEND_API_KEY || !MAIL_FROM) {
+if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
   console.warn(
-    "Email service is not fully configured. Missing one or more environment variables (RESEND_API_KEY, MAIL_FROM). Email sending will likely fail."
+    "Email service is not fully configured. Missing SMTP configuration. Email sending will likely fail."
   );
 }
 
-const resend = new Resend(RESEND_API_KEY);
+const transporter = nodemailer.createTransporter({
+  host: SMTP_HOST,
+  port: parseInt(SMTP_PORT) || 587,
+  secure: SMTP_SECURE === 'true',
+  auth: {
+    user: SMTP_USER,
+    pass: SMTP_PASS,
+  },
+});
 
 /**
  * Sends an email using Resend.
@@ -21,30 +29,24 @@ const resend = new Resend(RESEND_API_KEY);
  * @throws {Error} If email sending fails.
  */
 const sendEmail = async (to, subject, text, html) => {
-  if (!RESEND_API_KEY) {
-    console.error("Resend API key not configured. Cannot send email.");
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    console.error("SMTP not configured. Cannot send email.");
     throw new Error("Email service not configured.");
   }
   
   try {
-    const response = await resend.emails.send({
-      from: MAIL_FROM,
-      to: [to],
+    const info = await transporter.sendMail({
+      from: MAIL_FROM || SMTP_USER,
+      to: to,
       subject: subject,
       text: text,
       html: html,
     });
 
-    console.log("Email sent successfully:", JSON.stringify(response, null, 2));
-    if (!response.data?.id) {
-      console.warn("No email ID returned in Resend response:", response);
-    }
-    return response;
+    console.log("Email sent successfully:", info.messageId);
+    return { data: { id: info.messageId }, error: null };
   } catch (error) {
-    console.error(
-      "Error sending email with Resend:",
-      JSON.stringify(error, null, 2)
-    );
+    console.error("Error sending email with nodemailer:", error.message);
     throw new Error(`Failed to send email: ${error.message}`);
   }
 };
