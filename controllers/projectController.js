@@ -1,6 +1,7 @@
 const { PrismaClient, ProjectStatus } = require("@prisma/client");
 const { validationResult } = require("express-validator");
 const { getIO } = require("../socket");
+const cache = require('../utils/cache');
 
 const prisma = new PrismaClient();
 
@@ -106,6 +107,10 @@ exports.createProjectForClient = async (req, res, next) => {
       },
     });
 
+    // Clear cache
+    await cache.delPattern(`projects:admin:${adminId}:*`);
+    await cache.delPattern(`projects:client:${clientId}:*`);
+
     res.status(201).json(project);
     getIO().emit("project_created", project);
   } catch (error) {
@@ -123,8 +128,14 @@ exports.getAllProjectsForAdmin = async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
   const pageSize = parseInt(req.query.pageSize, 10) || 10;
   const skip = (page - 1) * pageSize;
+  const cacheKey = `projects:admin:${adminId}:${page}:${pageSize}`;
 
   try {
+    const cachedData = await cache.get(cacheKey);
+    if (cachedData) {
+      return res.status(200).json(cachedData);
+    }
+
     const projects = await prisma.project.findMany({
       where: { adminId },
       include: { client: { select: { name: true, id: true } } }, // Include client name and id
@@ -137,7 +148,7 @@ exports.getAllProjectsForAdmin = async (req, res, next) => {
       where: { adminId },
     });
 
-    res.status(200).json({
+    const result = {
       data: projects,
       pagination: {
         page,
@@ -145,7 +156,10 @@ exports.getAllProjectsForAdmin = async (req, res, next) => {
         total: totalProjects,
         totalPages: Math.ceil(totalProjects / pageSize),
       },
-    });
+    };
+
+    await cache.set(cacheKey, result, 300);
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }
@@ -264,6 +278,11 @@ exports.updateProject = async (req, res, next) => {
       },
       include: { client: { select: { name: true, id: true } } },
     });
+    // Clear cache
+    await cache.delPattern(`projects:admin:${adminId}:*`);
+    await cache.delPattern(`projects:client:${updatedProject.clientId}:*`);
+    await cache.del(`project:${projectId}`);
+
     res.status(200).json(updatedProject);
     getIO().emit("project_updated", updatedProject);
   } catch (error) {
@@ -294,6 +313,11 @@ exports.deleteProject = async (req, res, next) => {
     await prisma.project.delete({
       where: { id: projectId },
     });
+
+    // Clear cache
+    await cache.delPattern(`projects:admin:${adminId}:*`);
+    await cache.delPattern(`projects:client:${project.clientId}:*`);
+    await cache.del(`project:${projectId}`);
 
     res.status(200).json({ message: "Project deleted successfully" });
     getIO().emit("project_deleted", { id: projectId });

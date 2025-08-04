@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const { validationResult } = require('express-validator');
 const { getIO } = require("../socket");
+const cache = require('../utils/cache');
 
 const prisma = new PrismaClient();
 
@@ -30,6 +31,10 @@ exports.createClient = async (req, res, next) => {
                 }
             },
         });
+        
+        // Clear cache
+        await cache.delPattern(`clients:${adminId}:*`);
+        
         res.status(201).json(client);
         getIO().emit("client_created", client);
     } catch (error) {
@@ -51,7 +56,15 @@ exports.getAllClients = async (req, res, next) => {
         return res.status(401).json({ message: 'Unauthorized. Admin ID not found.' });
     }
 
+    const cacheKey = `clients:${adminId}:${page}:${pageSize}`;
+
     try {
+        // Check cache first
+        const cachedData = await cache.get(cacheKey);
+        if (cachedData) {
+            return res.status(200).json(cachedData);
+        }
+
         const clients = await prisma.client.findMany({
             where: { adminId },
             orderBy: { createdAt: 'desc' },
@@ -68,7 +81,7 @@ exports.getAllClients = async (req, res, next) => {
             where: { adminId },
         });
 
-        res.status(200).json({
+        const result = {
             data: clients,
             pagination: {
                 page,
@@ -76,7 +89,11 @@ exports.getAllClients = async (req, res, next) => {
                 total: totalClients,
                 totalPages: Math.ceil(totalClients / pageSize),
             },
-        });
+        };
+
+        // Cache for 5 minutes
+        await cache.set(cacheKey, result, 300);
+        res.status(200).json(result);
     } catch (error) {
         next(error);
     }
@@ -150,6 +167,11 @@ exports.updateClient = async (req, res, next) => {
                 eventType: eventType || undefined,
             },
         });
+        
+        // Clear cache
+        await cache.delPattern(`clients:${adminId}:*`);
+        await cache.del(`client:${id}`);
+        
         res.status(200).json(updatedClient);
         getIO().emit("client_updated", updatedClient);
     } catch (error) {
@@ -182,6 +204,11 @@ exports.deleteClient = async (req, res, next) => {
         await prisma.client.delete({
             where: { id },
         });
+        
+        // Clear cache
+        await cache.delPattern(`clients:${adminId}:*`);
+        await cache.del(`client:${id}`);
+        
         res.status(200).json({ message: 'Client deleted successfully' });
         getIO().emit("client_deleted", { id });
     } catch (error) {

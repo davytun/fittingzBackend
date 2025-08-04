@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const { validationResult } = require("express-validator");
 const { cloudinary } = require("../config/cloudinary");
+const cache = require('../utils/cache');
 
 const prisma = new PrismaClient();
 
@@ -70,6 +71,10 @@ exports.uploadStyleImage = async (req, res, next) => {
       styleImages.push(styleImage);
     }
 
+    // Clear cache
+    await cache.delPattern(`styleImages:client:${clientId}:*`);
+    await cache.delPattern(`styleImages:admin:${adminId}:*`);
+
     res.status(201).json(styleImages);
   } catch (error) {
     if (req.files && req.files.length > 0) {
@@ -132,6 +137,9 @@ exports.uploadStyleImageForAdmin = async (req, res, next) => {
       styleImages.push(styleImage);
     }
 
+    // Clear cache
+    await cache.delPattern(`styleImages:admin:${adminId}:*`);
+
     res.status(201).json(styleImages);
   } catch (error) {
     console.error("Prisma create error in uploadStyleImageForAdmin:", error);
@@ -158,8 +166,14 @@ exports.getStyleImagesByClientId = async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
   const pageSize = parseInt(req.query.pageSize, 10) || 10;
   const skip = (page - 1) * pageSize;
+  const cacheKey = `styleImages:client:${clientId}:${page}:${pageSize}`;
 
   try {
+    const cachedData = await cache.get(cacheKey);
+    if (cachedData) {
+      return res.status(200).json(cachedData);
+    }
+
     const client = await prisma.client.findUnique({ where: { id: clientId } });
     if (!client) {
       return res.status(404).json({ message: "Client not found" });
@@ -190,7 +204,7 @@ exports.getStyleImagesByClientId = async (req, res, next) => {
       },
     });
 
-    res.status(200).json({
+    const result = {
       data: styleImages,
       pagination: {
         page,
@@ -198,7 +212,10 @@ exports.getStyleImagesByClientId = async (req, res, next) => {
         total: totalStyleImages,
         totalPages: Math.ceil(totalStyleImages / pageSize),
       },
-    });
+    };
+
+    await cache.set(cacheKey, result, 300);
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }
@@ -315,6 +332,12 @@ exports.deleteStyleImage = async (req, res, next) => {
     });
     console.log(`StyleImage with ID ${imageId} deleted successfully`);
 
+    // Clear cache
+    if (styleImage.clientId) {
+      await cache.delPattern(`styleImages:client:${styleImage.clientId}:*`);
+    }
+    await cache.delPattern(`styleImages:admin:${adminId}:*`);
+
     res.status(200).json({ message: "Style image deleted successfully" });
   } catch (error) {
     console.error(`Error deleting StyleImage ${imageId}:`, error);
@@ -382,6 +405,12 @@ exports.updateStyleImage = async (req, res, next) => {
       },
     });
     console.log(`StyleImage with ID ${imageId} updated successfully`);
+
+    // Clear cache
+    if (styleImage.clientId) {
+      await cache.delPattern(`styleImages:client:${styleImage.clientId}:*`);
+    }
+    await cache.delPattern(`styleImages:admin:${adminId}:*`);
 
     res.status(200).json(updatedStyleImage);
   } catch (error) {

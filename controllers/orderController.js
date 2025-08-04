@@ -2,6 +2,7 @@ const { PrismaClient, OrderStatus } = require("@prisma/client");
 const { validationResult } = require("express-validator");
 const prisma = new PrismaClient();
 const { getIO } = require("../socket");
+const cache = require('../utils/cache');
 
 // Enhanced price validation
 const validatePrice = (price) => {
@@ -172,6 +173,10 @@ exports.createOrderForClient = async (req, res, next) => {
       });
     }
 
+    // Clear cache
+    await cache.delPattern(`orders:admin:${adminId}:*`);
+    await cache.delPattern(`orders:client:${clientId}:*`);
+
     res.status(201).json({
       message: "Order created successfully",
       order,
@@ -192,8 +197,14 @@ exports.getAllOrdersForAdmin = async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
   const pageSize = parseInt(req.query.pageSize, 10) || 10;
   const skip = (page - 1) * pageSize;
+  const cacheKey = `orders:admin:${adminId}:${page}:${pageSize}`;
 
   try {
+    const cachedData = await cache.get(cacheKey);
+    if (cachedData) {
+      return res.status(200).json(cachedData);
+    }
+
     const orders = await prisma.order.findMany({
       where: { adminId },
       include: {
@@ -214,7 +225,7 @@ exports.getAllOrdersForAdmin = async (req, res, next) => {
       where: { adminId },
     });
 
-    res.status(200).json({
+    const result = {
       data: orders,
       pagination: {
         page,
@@ -222,7 +233,10 @@ exports.getAllOrdersForAdmin = async (req, res, next) => {
         total: totalOrders,
         totalPages: Math.ceil(totalOrders / pageSize),
       },
-    });
+    };
+
+    await cache.set(cacheKey, result, 300);
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }
@@ -235,8 +249,14 @@ exports.getOrdersByClientId = async (req, res, next) => {
   const page = parseInt(req.query.page, 10) || 1;
   const pageSize = parseInt(req.query.pageSize, 10) || 10;
   const skip = (page - 1) * pageSize;
+  const cacheKey = `orders:client:${clientId}:${page}:${pageSize}`;
 
   try {
+    const cachedData = await cache.get(cacheKey);
+    if (cachedData) {
+      return res.status(200).json(cachedData);
+    }
+
     const client = await prisma.client.findUnique({ where: { id: clientId } });
     if (!client) {
       return res.status(404).json({ message: "Client not found" });
@@ -267,7 +287,7 @@ exports.getOrdersByClientId = async (req, res, next) => {
       where: { clientId, adminId },
     });
 
-    res.status(200).json({
+    const result = {
       data: orders,
       pagination: {
         page,
@@ -275,7 +295,10 @@ exports.getOrdersByClientId = async (req, res, next) => {
         total: totalOrders,
         totalPages: Math.ceil(totalOrders / pageSize),
       },
-    });
+    };
+
+    await cache.set(cacheKey, result, 300);
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }
@@ -365,6 +388,11 @@ exports.updateOrderStatus = async (req, res, next) => {
         project: { select: { name: true } },
       },
     });
+
+    // Clear cache
+    await cache.delPattern(`orders:admin:${adminId}:*`);
+    await cache.delPattern(`orders:client:${updatedOrder.clientId}:*`);
+    await cache.del(`order:${orderId}`);
 
     res.status(200).json({
       message: "Order status updated successfully",
@@ -480,6 +508,11 @@ exports.updateOrderDetails = async (req, res, next) => {
       }
     }
 
+    // Clear cache
+    await cache.delPattern(`orders:admin:${adminId}:*`);
+    await cache.delPattern(`orders:client:${updatedOrder.clientId}:*`);
+    await cache.del(`order:${orderId}`);
+
     res.status(200).json(updatedOrder);
     getIO().emit("order_updated", updatedOrder);
   } catch (error) {
@@ -504,6 +537,12 @@ exports.deleteOrder = async (req, res, next) => {
     }
 
     await prisma.order.delete({ where: { id: orderId } });
+    
+    // Clear cache
+    await cache.delPattern(`orders:admin:${adminId}:*`);
+    await cache.delPattern(`orders:client:${order.clientId}:*`);
+    await cache.del(`order:${orderId}`);
+    
     res.status(200).json({ message: "Order deleted successfully" });
     getIO().emit("order_deleted", { id: orderId });
   } catch (error) {
