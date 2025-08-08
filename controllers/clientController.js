@@ -140,7 +140,17 @@ exports.updateClient = async (req, res, next) => {
     }
 
     const { id } = req.params;
-    const { name, phone, email, eventType } = req.body;
+    const { 
+        name, 
+        phone, 
+        email, 
+        eventType, 
+        favoriteColors, 
+        dislikedColors, 
+        preferredStyles, 
+        bodyShape, 
+        additionalDetails 
+    } = req.body;
     const adminId = req.user.id;
 
     if (!adminId) {
@@ -161,10 +171,15 @@ exports.updateClient = async (req, res, next) => {
         const updatedClient = await prisma.client.update({
             where: { id },
             data: {
-                name: name || undefined, // Only update fields that are provided
-                phone: phone || undefined,
-                email: email || undefined,
-                eventType: eventType || undefined,
+                name: name !== undefined ? name : undefined,
+                phone: phone !== undefined ? phone : undefined,
+                email: email !== undefined ? email : undefined,
+                eventType: eventType !== undefined ? eventType : undefined,
+                favoriteColors: favoriteColors !== undefined ? favoriteColors : undefined,
+                dislikedColors: dislikedColors !== undefined ? dislikedColors : undefined,
+                preferredStyles: preferredStyles !== undefined ? preferredStyles : undefined,
+                bodyShape: bodyShape !== undefined ? bodyShape : undefined,
+                additionalDetails: additionalDetails !== undefined ? additionalDetails : undefined,
             },
         });
         

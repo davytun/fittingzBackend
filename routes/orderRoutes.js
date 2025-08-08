@@ -357,6 +357,19 @@ router.post(
   orderController.createOrderForClient
 );
 
+// @route   POST /api/orders/event/:eventId/client/:clientId
+// @desc    Create a new order for a specific event and client
+// @access  Private (Admin only)
+router.post(
+  "/event/:eventId/client/:clientId",
+  [
+    param("eventId").isString().notEmpty().withMessage("Event ID parameter is required."),
+    param("clientId").isString().notEmpty().withMessage("Client ID parameter is required."),
+  ],
+  validateCreateOrderInput,
+  orderController.createOrderForEvent
+);
+
 // @route   GET /api/orders
 // @desc    Get all orders for the authenticated admin
 // @access  Private (Admin only)

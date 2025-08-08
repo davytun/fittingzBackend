@@ -53,6 +53,110 @@ const generateOrderNumber = async (adminId) => {
   return orderNumber;
 };
 
+// Create a new order for a specific event and client
+exports.createOrderForEvent = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      message: "Validation errors",
+      errors: errors.array(),
+    });
+  }
+
+  const { eventId, clientId } = req.params;
+  const { details, price, currency, dueDate, status, projectId, deposit, styleDescription, styleImageIds } = req.body;
+  const adminId = req.user.id;
+
+  try {
+    // Validate price
+    if (!validatePrice(price)) {
+      return res.status(400).json({
+        message: "Invalid price value",
+        details: "Must be a number between -9,999,999.99 and 9,999,999.99",
+      });
+    }
+
+    // Parse and validate dueDate
+    let parsedDueDate = null;
+    try {
+      parsedDueDate = dueDate ? parseOrderDate(dueDate) : null;
+    } catch (dateError) {
+      return res.status(400).json({
+        message: "Invalid due date",
+        details: dateError.message,
+      });
+    }
+
+    // Verify event exists and client is part of it
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { clients: { where: { clientId } } },
+    });
+
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+    if (event.adminId !== adminId) {
+      return res.status(403).json({ message: "Forbidden: Event does not belong to you" });
+    }
+    if (event.clients.length === 0) {
+      return res.status(403).json({ message: "Client is not part of this event" });
+    }
+
+    // Generate unique order number
+    const finalOrderNumber = await generateOrderNumber(adminId);
+
+    // Create order tied to event
+    const order = await prisma.order.create({
+      data: {
+        orderNumber: finalOrderNumber,
+        details,
+        price: parseFloat(price.toFixed(2)),
+        currency: currency || "NGN",
+        dueDate: parsedDueDate,
+        status: status || OrderStatus.PENDING_PAYMENT,
+        clientId,
+        adminId,
+        eventId,
+        projectId: projectId || null,
+        deposit: deposit ? parseFloat(deposit.toFixed(2)) : null,
+        styleDescription: styleDescription || null,
+      },
+      include: {
+        client: { select: { name: true } },
+        project: { select: { name: true } },
+        event: { select: { name: true } },
+      },
+    });
+
+    // Link style images if provided
+    if (styleImageIds && styleImageIds.length > 0) {
+      await prisma.orderStyleImage.createMany({
+        data: styleImageIds.map(imageId => ({
+          orderId: order.id,
+          styleImageId: imageId,
+        })),
+      });
+    }
+
+    // Clear cache
+    await cache.delPattern(`orders:admin:${adminId}:*`);
+    await cache.delPattern(`orders:client:${clientId}:*`);
+
+    res.status(201).json({
+      message: "Order created successfully for event",
+      order,
+    });
+    getIO().emit("order_created", order);
+  } catch (error) {
+    console.error("Event order creation error:", error);
+    res.status(500).json({
+      message: "Failed to create order for event",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
 // Create a new order for a specific client
 exports.createOrderForClient = async (req, res, next) => {
   const errors = validationResult(req);
@@ -72,7 +176,7 @@ exports.createOrderForClient = async (req, res, next) => {
   }
 
   const { clientId } = req.params;
-  const { details, price, currency, dueDate, status, projectId, deposit, styleDescription, styleImageIds } = req.body;
+  const { details, price, currency, dueDate, status, projectId, eventId, deposit, styleDescription, styleImageIds } = req.body;
   const adminId = req.user.id;
 
   try {
@@ -139,6 +243,33 @@ exports.createOrderForClient = async (req, res, next) => {
       }
     }
 
+    // Verify event if provided
+    if (eventId) {
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: { id: true, adminId: true, clients: { where: { clientId } } },
+      });
+
+      if (!event) {
+        return res.status(404).json({
+          message: "Event not found",
+          eventId,
+        });
+      }
+      if (event.adminId !== adminId) {
+        return res.status(403).json({
+          message: "Forbidden",
+          details: "Event does not belong to this admin",
+        });
+      }
+      if (event.clients.length === 0) {
+        return res.status(403).json({
+          message: "Forbidden",
+          details: "Client is not associated with this event",
+        });
+      }
+    }
+
     // Generate unique order number
     const finalOrderNumber = await generateOrderNumber(adminId);
 
@@ -154,12 +285,14 @@ exports.createOrderForClient = async (req, res, next) => {
         clientId,
         adminId,
         projectId: projectId || null,
+        eventId: eventId || null,
         deposit: deposit ? parseFloat(deposit.toFixed(2)) : null,
         styleDescription: styleDescription || null,
       },
       include: {
         client: { select: { name: true } },
         project: { select: { name: true } },
+        event: { select: { name: true } },
       },
     });
 
@@ -210,6 +343,7 @@ exports.getAllOrdersForAdmin = async (req, res, next) => {
       include: {
         client: { select: { name: true, id: true } },
         project: { select: { name: true, id: true } },
+        event: { select: { name: true, id: true } },
         styleImages: {
           include: {
             styleImage: true,
@@ -272,6 +406,7 @@ exports.getOrdersByClientId = async (req, res, next) => {
       include: {
         client: { select: { name: true, id: true } },
         project: { select: { name: true, id: true } },
+        event: { select: { name: true, id: true } },
         styleImages: {
           include: {
             styleImage: true,
@@ -315,6 +450,7 @@ exports.getOrderById = async (req, res, next) => {
       include: {
         client: { select: { name: true, id: true } },
         project: { select: { name: true, id: true } },
+        event: { select: { name: true, id: true } },
         styleImages: {
           include: {
             styleImage: true,
@@ -386,6 +522,7 @@ exports.updateOrderStatus = async (req, res, next) => {
       include: {
         client: { select: { name: true } },
         project: { select: { name: true } },
+        event: { select: { name: true } },
       },
     });
 
@@ -416,7 +553,7 @@ exports.updateOrderDetails = async (req, res, next) => {
   }
 
   const { orderId } = req.params;
-  const { details, price, currency, dueDate, projectId, deposit, styleDescription, styleImageIds } = req.body;
+  const { details, price, currency, dueDate, projectId, eventId, deposit, styleDescription, styleImageIds } = req.body;
   const adminId = req.user.id;
 
   try {
@@ -476,12 +613,19 @@ exports.updateOrderDetails = async (req, res, next) => {
               ? null
               : projectId
             : undefined,
+        eventId:
+          eventId !== undefined
+            ? eventId === ""
+              ? null
+              : eventId
+            : undefined,
         deposit: deposit !== undefined ? (deposit ? parseFloat(deposit.toFixed(2)) : null) : undefined,
         styleDescription: styleDescription !== undefined ? styleDescription : undefined,
       },
       include: {
         client: { select: { name: true } },
         project: { select: { name: true } },
+        event: { select: { name: true } },
         styleImages: {
           include: {
             styleImage: true,

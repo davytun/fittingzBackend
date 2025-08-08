@@ -112,11 +112,15 @@ model Order {
   projectId String?
   project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
+  eventId String?
+  event   Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
   styleImages OrderStyleImage[]
 
   @@index([clientId])
   @@index([adminId])
   @@index([projectId])
+  @@index([eventId])
   @@index([status])
   @@index([orderNumber])
 }
@@ -137,20 +141,25 @@ model OrderStyleImage {
 }
 
 model Client {
-  id           String        @id @default(cuid())
-  name         String
-  phone        String?
-  email        String?
-  eventType    String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  admin        Admin         @relation(fields: [adminId], references: [id])
-  adminId      String
-  measurements Measurement[]
-  styleImages  StyleImage[]
-  Project      Project[]
-  Order        Order[]
-  events       EventClient[]
+  id                String        @id @default(cuid())
+  name              String
+  phone             String?
+  email             String?
+  eventType         String?
+  favoriteColors    String[]      @default([])
+  dislikedColors    String[]      @default([])
+  preferredStyles   String[]      @default([])
+  bodyShape         String?
+  additionalDetails String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  admin             Admin         @relation(fields: [adminId], references: [id])
+  adminId           String
+  measurements      Measurement[]
+  styleImages       StyleImage[]
+  Project           Project[]
+  Order             Order[]
+  events            EventClient[]
 
   @@index([adminId])
 }
@@ -198,6 +207,7 @@ model Event {
   adminId     String
   admin       Admin         @relation(fields: [adminId], references: [id], onDelete: Cascade)
   clients     EventClient[]
+  orders      Order[]
 
   @@index([adminId])
 }

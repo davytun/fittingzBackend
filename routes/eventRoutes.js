@@ -26,6 +26,7 @@ const validateEventId = [
 router.post("/", validateEventInput, eventController.createEvent);
 router.get("/", eventController.getAllEvents);
 router.get("/:id", validateEventId, eventController.getEventById);
+router.get("/:id/orders", validateEventId, eventController.getEventOrders);
 router.put("/:id", validateEventId, validateEventUpdate, eventController.updateEvent);
 router.delete("/:id", validateEventId, eventController.deleteEvent);
 

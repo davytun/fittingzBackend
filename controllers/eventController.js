@@ -50,6 +50,11 @@ exports.getAllEvents = async (req, res, next) => {
       include: {
         clients: {
           include: { client: true }
+        },
+        orders: {
+          include: {
+            client: { select: { name: true } }
+          }
         }
       },
       orderBy: { createdAt: "desc" }
@@ -72,6 +77,12 @@ exports.getEventById = async (req, res, next) => {
       include: {
         clients: {
           include: { client: true }
+        },
+        orders: {
+          include: {
+            client: { select: { name: true } }
+          },
+          orderBy: { createdAt: "desc" }
         }
       }
     });
@@ -117,12 +128,42 @@ exports.updateEvent = async (req, res, next) => {
       include: {
         clients: {
           include: { client: true }
+        },
+        orders: {
+          include: {
+            client: { select: { name: true } }
+          }
         }
       }
     });
 
     res.status(200).json(updatedEvent);
     getIO().emit("event_updated", updatedEvent);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get orders for a specific event
+exports.getEventOrders = async (req, res, next) => {
+  const { id } = req.params;
+  const adminId = req.user.id;
+
+  try {
+    const event = await prisma.event.findUnique({ where: { id } });
+    if (!event || event.adminId !== adminId) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    const orders = await prisma.order.findMany({
+      where: { eventId: id, adminId },
+      include: {
+        client: { select: { name: true } }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+
+    res.status(200).json({ data: orders });
   } catch (error) {
     next(error);
   }

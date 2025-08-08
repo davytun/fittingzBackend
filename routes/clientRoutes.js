@@ -32,7 +32,7 @@ const { authenticateJwt } = require('../middlewares/authMiddleware');
  *           nullable: true
  *         eventType:
  *           type: string
- *           description: Type of event the client is preparing for.
+ *           description: Type of event the client is preparing for (optional).
  *           example: Wedding
  *           nullable: true
  *         createdAt:
@@ -67,7 +67,7 @@ const { authenticateJwt } = require('../middlewares/authMiddleware');
  *           example: jane.doe@example.com
  *         eventType:
  *           type: string
- *           description: Type of event the client is preparing for.
+ *           description: Type of event the client is preparing for (optional).
  *           example: Wedding
  *   requestBodies:
  *     ClientCreationBody:
@@ -96,12 +96,30 @@ const validateClientId = [
     param('id').isString().withMessage('Client ID must be a string.').isLength({ min: 1 }).withMessage('Client ID cannot be empty.')
 ];
 
-// Middleware for validating client data
-const validateClientInput = [
+// Middleware for validating client creation (name required)
+const validateClientCreation = [
     body('name').trim().notEmpty().withMessage('Client name is required.'),
     body('email').optional({ checkFalsy: true }).isEmail().withMessage('Please provide a valid email address.').normalizeEmail(),
-    body('phone').optional({ checkFalsy: true }).isString().withMessage('Phone number must be a string.'), // Add more specific phone validation if needed
+    body('phone').optional({ checkFalsy: true }).isString().withMessage('Phone number must be a string.'),
     body('eventType').optional({ checkFalsy: true }).isString().withMessage('Event type must be a string.'),
+    body('favoriteColors').optional().isArray().withMessage('Favorite colors must be an array.'),
+    body('dislikedColors').optional().isArray().withMessage('Disliked colors must be an array.'),
+    body('preferredStyles').optional().isArray().withMessage('Preferred styles must be an array.'),
+    body('bodyShape').optional({ checkFalsy: true }).isString().withMessage('Body shape must be a string.'),
+    body('additionalDetails').optional({ checkFalsy: true }).isString().withMessage('Additional details must be a string.'),
+];
+
+// Middleware for validating client updates (all fields optional)
+const validateClientUpdate = [
+    body('name').optional().trim().notEmpty().withMessage('Client name cannot be empty.'),
+    body('email').optional({ checkFalsy: true }).isEmail().withMessage('Please provide a valid email address.').normalizeEmail(),
+    body('phone').optional({ checkFalsy: true }).isString().withMessage('Phone number must be a string.'),
+    body('eventType').optional({ checkFalsy: true }).isString().withMessage('Event type must be a string.'),
+    body('favoriteColors').optional().isArray().withMessage('Favorite colors must be an array.'),
+    body('dislikedColors').optional().isArray().withMessage('Disliked colors must be an array.'),
+    body('preferredStyles').optional().isArray().withMessage('Preferred styles must be an array.'),
+    body('bodyShape').optional({ checkFalsy: true }).isString().withMessage('Body shape must be a string.'),
+    body('additionalDetails').optional({ checkFalsy: true }).isString().withMessage('Additional details must be a string.'),
 ];
 
 
@@ -148,7 +166,7 @@ router.use(authenticateJwt);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/', validateClientInput, clientController.createClient);
+router.post('/', validateClientCreation, clientController.createClient);
 
 // @route   GET /api/clients
 // @desc    Get all clients for the authenticated admin
@@ -331,7 +349,7 @@ router.get('/:id', validateClientId, clientController.getClientById);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/:id', validateClientId, validateClientInput, clientController.updateClient);
+router.put('/:id', validateClientId, validateClientUpdate, clientController.updateClient);
 
 // @route   DELETE /api/clients/:id
 // @desc    Delete a client by ID
