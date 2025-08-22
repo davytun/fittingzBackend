@@ -126,8 +126,20 @@ exports.createOrderForEvent = async (req, res, next) => {
         client: { select: { name: true } },
         project: { select: { name: true } },
         event: { select: { name: true } },
+        payments: true,
       },
     });
+
+    // Create initial payment if deposit is provided
+    if (deposit && deposit > 0) {
+      await prisma.payment.create({
+        data: {
+          orderId: order.id,
+          amount: parseFloat(deposit.toFixed(2)),
+          notes: "Initial deposit",
+        },
+      });
+    }
 
     // Link style images if provided
     if (styleImageIds && styleImageIds.length > 0) {
@@ -293,8 +305,20 @@ exports.createOrderForClient = async (req, res, next) => {
         client: { select: { name: true } },
         project: { select: { name: true } },
         event: { select: { name: true } },
+        payments: true,
       },
     });
+
+    // Create initial payment if deposit is provided
+    if (deposit && deposit > 0) {
+      await prisma.payment.create({
+        data: {
+          orderId: order.id,
+          amount: parseFloat(deposit.toFixed(2)),
+          notes: "Initial deposit",
+        },
+      });
+    }
 
     // Link style images if provided
     if (styleImageIds && styleImageIds.length > 0) {
@@ -349,6 +373,7 @@ exports.getAllOrdersForAdmin = async (req, res, next) => {
             styleImage: true,
           },
         },
+        payments: true,
       },
       orderBy: { createdAt: "desc" },
       skip: skip,
@@ -412,6 +437,7 @@ exports.getOrdersByClientId = async (req, res, next) => {
             styleImage: true,
           },
         },
+        payments: true,
       },
       orderBy: { createdAt: "desc" },
       skip: skip,
@@ -456,6 +482,7 @@ exports.getOrderById = async (req, res, next) => {
             styleImage: true,
           },
         },
+        payments: true,
       },
     });
 
@@ -559,6 +586,7 @@ exports.updateOrderDetails = async (req, res, next) => {
   try {
     const existingOrder = await prisma.order.findUnique({
       where: { id: orderId },
+      include: { payments: true },
     });
     if (!existingOrder) {
       return res.status(404).json({ message: "Order not found" });
@@ -569,11 +597,40 @@ exports.updateOrderDetails = async (req, res, next) => {
       });
     }
 
-    if (price !== undefined && !validatePrice(price)) {
+
+
+    // Prevent editing price and deposit if payments exist
+    const hasPayments = existingOrder.payments.length > 0;
+    if (hasPayments && (price !== undefined && price !== Number(existingOrder.price) || deposit !== undefined && deposit !== Number(existingOrder.deposit))) {
       return res.status(400).json({
-        message:
-          "Invalid price value. Must be a number between -999,999.99 and 999,999.99",
+        message: "Cannot modify price or deposit after payments have been made",
+        details: {
+          paymentsCount: existingOrder.payments.length,
+          totalPaid: existingOrder.payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+        }
       });
+    }
+
+    // Validate price and deposit for orders without payments
+    if (!hasPayments) {
+      if (price !== undefined && !validatePrice(price)) {
+        return res.status(400).json({
+          message: "Invalid price value. Must be a number between -999,999.99 and 999,999.99"
+        });
+      }
+      
+      if (deposit !== undefined && deposit > 0) {
+        const newPrice = price !== undefined ? Number(price) : Number(existingOrder.price);
+        if (Number(deposit) > newPrice) {
+          return res.status(400).json({
+            message: "Deposit cannot exceed total price",
+            details: {
+              deposit: Number(deposit),
+              totalPrice: newPrice
+            }
+          });
+        }
+      }
     }
 
     if (projectId && projectId !== existingOrder.projectId) {

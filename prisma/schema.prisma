@@ -116,6 +116,7 @@ model Order {
   event   Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   styleImages OrderStyleImage[]
+  payments    Payment[]
 
   @@index([clientId])
   @@index([adminId])
@@ -224,4 +225,18 @@ model EventClient {
   @@unique([eventId, clientId])
   @@index([eventId])
   @@index([clientId])
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  orderId     String
+  amount      Decimal  @db.Decimal(10, 2)
+  paymentDate DateTime @default(now())
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }

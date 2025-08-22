@@ -5,6 +5,7 @@ const styleImageRoutes = require("../routes/styleImageRoutes");
 const projectRoutes = require("../routes/projectRoutes");
 const orderRoutes = require("../routes/orderRoutes");
 const eventRoutes = require("../routes/eventRoutes");
+const paymentRoutes = require("../routes/paymentRoutes");
 const { generalApiLimiter } = require("../middlewares/rateLimitMiddleware");
 
 module.exports = (app) => {
@@ -16,6 +17,7 @@ module.exports = (app) => {
   app.use("/api/projects", generalApiLimiter, projectRoutes);
   app.use("/api/orders", generalApiLimiter, orderRoutes);
   app.use("/api/events", generalApiLimiter, eventRoutes);
+  app.use("/api", generalApiLimiter, paymentRoutes);
   app.use("/test", require("../routes/health"));
 
   return app;
