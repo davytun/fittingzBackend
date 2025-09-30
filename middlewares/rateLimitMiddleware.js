@@ -1,27 +1,88 @@
-const rateLimit = require('express-rate-limit');
+const rateLimit = require("express-rate-limit");
 
-// Rate limiter for login attempts
 const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Limit each IP to 10 login requests per windowMs
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    message: { message: 'Too many login attempts from this IP, please try again after 15 minutes.' },
-    // keyGenerator: (req) => req.ip, // Default, but can be customized
-    // handler: (req, res, next, options) => res.status(options.statusCode).json(options.message), // Default handler
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      "Too many login attempts from this IP, please try again after 15 minutes.",
+  },
 });
 
-// Example of a more general API limiter (can be applied to all /api routes if needed)
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      "Too many registration attempts from this IP, please try again after 15 minutes.",
+  },
+});
+
+const resendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      "Too many resend attempts from this IP, please try again after 15 minutes.",
+  },
+});
+
+const createClientLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      "Too many client creation attempts from this IP, please try again after 15 minutes.",
+  },
+});
+
+const createOrderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      "Too many order creation attempts from this IP, please try again after 15 minutes.",
+  },
+});
+
+const measurementLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      "Too many measurement creation attempts from this IP, please try again after 15 minutes.",
+  },
+});
+
 const generalApiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs for other API routes
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { message: 'Too many requests from this IP, please try again after 15 minutes.' },
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      "Too many requests from this IP, please try again after 15 minutes.",
+  },
 });
-
 
 module.exports = {
-    loginLimiter,
-    generalApiLimiter, // Exporting this in case we want to use it later
+  loginLimiter,
+  registerLimiter,
+  resendLimiter,
+  createClientLimiter,
+  measurementLimiter,
+  generalApiLimiter,
+  createOrderLimiter,
 };

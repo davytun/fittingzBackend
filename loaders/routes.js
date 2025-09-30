@@ -12,12 +12,12 @@ module.exports = (app) => {
   app.use("/api/auth", authRoutes);
   // Apply general API rate limiter to all other API routes
   app.use("/api/clients", generalApiLimiter, clientRoutes);
-  app.use("/api/measurements", generalApiLimiter, measurementRoutes);
+  app.use("/api/clients", generalApiLimiter, measurementRoutes);
   app.use("/api/styles", generalApiLimiter, styleImageRoutes);
   app.use("/api/projects", generalApiLimiter, projectRoutes);
   app.use("/api/orders", generalApiLimiter, orderRoutes);
   app.use("/api/events", generalApiLimiter, eventRoutes);
-  app.use("/api", generalApiLimiter, paymentRoutes);
+  app.use("/api/payments", generalApiLimiter, paymentRoutes);
   app.use("/test", require("../routes/health"));
 
   return app;

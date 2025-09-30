@@ -1,127 +1,69 @@
-const { PrismaClient } = require('@prisma/client');
 const { validationResult } = require('express-validator');
-const { getIO } = require("../socket");
+const MeasurementService = require('../services/measurementService');
 
-const prisma = new PrismaClient();
-
-// Add or Update measurements for a specific client
-// This acts as an "upsert" because of the unique constraint on clientId in the Measurement model.
-exports.addOrUpdateMeasurement = async (req, res, next) => {
+class MeasurementController {
+  async addOrUpdateMeasurement(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() });
     }
-
-    const { clientId } = req.params;
-    const { fields } = req.body; // Expecting fields to be a JSON object e.g., { "bust": 90, "waist": 70 }
-    const adminId = req.user.id;
 
     try {
-        // Verify client exists and belongs to the admin
-        const client = await prisma.client.findUnique({ where: { id: clientId } });
-        if (!client) {
-            return res.status(404).json({ message: 'Client not found' });
-        }
-        if (client.adminId !== adminId) {
-            return res.status(403).json({ message: 'Forbidden: You do not have access to this client\'s measurements' });
-        }
-
-        // Upsert: update if exists, create if not
-        const measurement = await prisma.measurement.upsert({
-            where: { clientId: clientId }, // Unique identifier for the measurement record
-            update: { fields: fields || {} },
-            create: {
-                clientId: clientId,
-                fields: fields || {},
-            },
-            include: { client: { select: { name: true } } } // Optionally include client name
-        });
-
-        res.status(200).json(measurement);
-        getIO().emit("measurement_updated", measurement);
+      const { clientId } = req.params;
+      const { fields } = req.body;
+      const adminId = req.user.id;
+      const measurement = await MeasurementService.addOrUpdateMeasurement({ clientId, fields, adminId });
+      res.status(200).json(measurement);
     } catch (error) {
-        // Handle potential errors, e.g., if `fields` is not valid JSON (though Prisma might handle this)
-        if (error.code === 'P2002' && error.meta?.target?.includes('clientId')) {
-            // This specific error for unique constraint violation should ideally be handled by upsert logic,
-            // but good to be aware of if not using upsert or if there's a race condition.
-            return res.status(409).json({ message: 'Measurement record for this client already being processed or exists.' });
-        }
-        next(error);
+      if (error.message === 'Client not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes('Forbidden')) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error.code === 'P2002') {
+        return res.status(409).json({ message: 'Measurement record for this client already being processed.' });
+      }
+      next(error);
     }
-};
+  }
 
-// Get measurements for a specific client
-exports.getMeasurementsByClientId = async (req, res, next) => {
-    const { clientId } = req.params;
-    const adminId = req.user.id;
-
+  async getMeasurementsByClientId(req, res, next) {
     try {
-        // Verify client exists and belongs to the admin
-        const client = await prisma.client.findUnique({ where: { id: clientId } });
-        if (!client) {
-            return res.status(404).json({ message: 'Client not found' });
-        }
-        if (client.adminId !== adminId) {
-            return res.status(403).json({ message: 'Forbidden: You do not have access to this client\'s measurements' });
-        }
-
-        const measurement = await prisma.measurement.findUnique({
-            where: { clientId: clientId },
-            include: { client: { select: { name: true } } }
-        });
-
-        if (!measurement) {
-            // Return a default/empty measurement object for this client
-            return res.status(200).json({
-                id: null,
-                clientId: clientId,
-                fields: {},
-                createdAt: null,
-                updatedAt: null,
-                client: { name: client.name }
-            });
-        }
-
-        res.status(200).json(measurement);
+      const { clientId } = req.params;
+      const adminId = req.user.id;
+      const measurement = await MeasurementService.getMeasurementsByClientId({ clientId, adminId });
+      res.status(200).json(measurement);
     } catch (error) {
-        next(error);
+      if (error.message === 'Client not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes('Forbidden')) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
     }
-};
+  }
 
-// Delete measurements for a specific client
-exports.deleteMeasurementsByClientId = async (req, res, next) => {
-    const { clientId } = req.params;
-    const adminId = req.user.id;
-
+  async deleteMeasurementsByClientId(req, res, next) {
     try {
-        // Verify client exists and belongs to the admin
-        const client = await prisma.client.findUnique({ where: { id: clientId } });
-        if (!client) {
-            return res.status(404).json({ message: 'Client not found' });
-        }
-        if (client.adminId !== adminId) {
-            return res.status(403).json({ message: 'Forbidden: You cannot delete measurements for this client.' });
-        }
-
-        // Check if measurements exist before attempting to delete
-        const existingMeasurement = await prisma.measurement.findUnique({
-            where: { clientId: clientId },
-        });
-
-        if (!existingMeasurement) {
-            return res.status(404).json({ message: 'No measurements found for this client to delete.' });
-        }
-
-        await prisma.measurement.delete({
-            where: { clientId: clientId },
-        });
-
-        res.status(200).json({ message: 'Measurements deleted successfully for client.' });
-        getIO().emit("measurement_deleted", { clientId });
+      const { clientId } = req.params;
+      const adminId = req.user.id;
+      const result = await MeasurementService.deleteMeasurementsByClientId({ clientId, adminId });
+      res.status(200).json(result);
     } catch (error) {
-        if (error.code === 'P2025') { // Prisma error: "Record to delete not found"
-            return res.status(404).json({ message: 'No measurements found for this client to delete or already deleted.' });
-        }
-        next(error);
+      if (error.message === 'Client not found' || error.message.includes('No measurements found')) {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes('Forbidden')) {
+        return res.status(403).json({ message: error.message });
+      }
+      if (error.code === 'P2025') {
+        return res.status(404).json({ message: 'No measurements found for this client to delete or already deleted.' });
+      }
+      next(error);
     }
-};
+  }
+}
+
+module.exports = new MeasurementController();

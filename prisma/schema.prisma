@@ -91,32 +91,27 @@ enum OrderStatus {
 }
 
 model Order {
-  id               String      @id @default(cuid())
-  orderNumber      String
-  details          String?
-  price            Decimal     @db.Decimal(10, 2)
-  currency         String      @default("NGN")
+  id               String            @id @default(cuid())
+  orderNumber      String            @unique
+  details          Json?
+  price            Decimal           @db.Decimal(10, 2)
+  currency         String            @default("NGN")
   dueDate          DateTime?
-  status           OrderStatus @default(PENDING_PAYMENT)
-  deposit          Decimal?    @db.Decimal(10, 2)
+  status           OrderStatus       @default(PENDING_PAYMENT)
+  deposit          Decimal?          @db.Decimal(10, 2)
   styleDescription String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  adminId String
-  admin   Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-
-  eventId String?
-  event   Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
-
-  styleImages OrderStyleImage[]
-  payments    Payment[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  clientId         String
+  client           Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  adminId          String
+  admin            Admin             @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  projectId        String?
+  project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  eventId          String?
+  event            Event?            @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  styleImages      OrderStyleImage[]
+  payments         Payment[]
 
   @@index([clientId])
   @@index([adminId])
@@ -130,12 +125,12 @@ model OrderStyleImage {
   id      String @id @default(cuid())
   orderId String
   order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
+
   styleImageId String
   styleImage   StyleImage @relation(fields: [styleImageId], references: [id], onDelete: Cascade)
-  
+
   createdAt DateTime @default(now())
-  
+
   @@unique([orderId, styleImageId])
   @@index([orderId])
   @@index([styleImageId])

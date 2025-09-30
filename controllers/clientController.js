@@ -1,235 +1,143 @@
-const { PrismaClient } = require('@prisma/client');
-const { validationResult } = require('express-validator');
-const { getIO } = require("../socket");
-const cache = require('../utils/cache');
+const { validationResult } = require("express-validator");
+const ClientService = require("../services/clientService");
 
-const prisma = new PrismaClient();
-
-// Create a new client for the authenticated admin
-exports.createClient = async (req, res, next) => {
+class ClientController {
+  async createClient(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { name, phone, email, eventType } = req.body;
-    const adminId = req.user.id; // Authenticated admin's ID from authenticateJwt middleware
-
-    try {
-        if (!adminId) {
-             return res.status(401).json({ message: 'Unauthorized. Admin ID not found.' });
-        }
-
-        const client = await prisma.client.create({
-            data: {
-                name,
-                phone,
-                email,
-                eventType,
-                admin: {
-                    connect: { id: adminId }
-                }
-            },
-        });
-        
-        // Clear cache
-        await cache.delPattern(`clients:${adminId}:*`);
-        
-        res.status(201).json(client);
-        getIO().emit("client_created", client);
-    } catch (error) {
-        if (error.code === 'P2025') { // Prisma error code for record to connect not found
-            return res.status(400).json({ message: "Admin user not found for creating client."})
-        }
-        next(error);
-    }
-};
-
-// Get all clients for the authenticated admin
-exports.getAllClients = async (req, res, next) => {
-    const adminId = req.user.id;
-    const page = parseInt(req.query.page, 10) || 1;
-    const pageSize = parseInt(req.query.pageSize, 10) || 10;
-    const skip = (page - 1) * pageSize;
-
-     if (!adminId) {
-        return res.status(401).json({ message: 'Unauthorized. Admin ID not found.' });
-    }
-
-    const cacheKey = `clients:${adminId}:${page}:${pageSize}`;
-
-    try {
-        // Check cache first
-        const cachedData = await cache.get(cacheKey);
-        if (cachedData) {
-            return res.status(200).json(cachedData);
-        }
-
-        const clients = await prisma.client.findMany({
-            where: { adminId },
-            orderBy: { createdAt: 'desc' },
-            include: { // Optionally include related data
-                _count: {
-                    select: { measurements: true, styleImages: true }
-                }
-            },
-            skip: skip,
-            take: pageSize,
-        });
-
-        const totalClients = await prisma.client.count({
-            where: { adminId },
-        });
-
-        const result = {
-            data: clients,
-            pagination: {
-                page,
-                pageSize,
-                total: totalClients,
-                totalPages: Math.ceil(totalClients / pageSize),
-            },
-        };
-
-        // Cache for 5 minutes
-        await cache.set(cacheKey, result, 300);
-        res.status(200).json(result);
-    } catch (error) {
-        next(error);
-    }
-};
-
-// Get a single client by ID, ensuring it belongs to the authenticated admin
-exports.getClientById = async (req, res, next) => {
-    const { id } = req.params;
-    const adminId = req.user.id;
-
-    if (!adminId) {
-        return res.status(401).json({ message: 'Unauthorized. Admin ID not found.' });
+      return res.status(400).json({ errors: errors.array() });
     }
 
     try {
-        const client = await prisma.client.findUnique({
-            where: { id },
-            include: { // Optionally include related data
-                measurements: true,
-                styleImages: true
-            }
-        });
-
-        if (!client) {
-            return res.status(404).json({ message: 'Client not found' });
-        }
-
-        if (client.adminId !== adminId) {
-            // Forbidden to access client of another admin
-            return res.status(403).json({ message: 'Forbidden: You do not have access to this client' });
-        }
-
-        res.status(200).json(client);
+      const { name, phone, email, eventType } = req.body;
+      const adminId = req.user.id;
+      const client = await ClientService.createClient({
+        name,
+        phone,
+        email,
+        eventType,
+        adminId,
+      });
+      res.status(201).json(client);
     } catch (error) {
-        next(error);
+      if (error.message === "Unauthorized. Admin ID not found.") {
+        return res.status(401).json({ message: error.message });
+      }
+      if (error.code === "P2025") {
+        return res
+          .status(400)
+          .json({ message: "Admin user not found for creating client." });
+      }
+      next(error);
     }
-};
+  }
 
-// Update a client by ID, ensuring it belongs to the authenticated admin
-exports.updateClient = async (req, res, next) => {
+  async getAllClients(req, res, next) {
+    try {
+      const adminId = req.user.id;
+      const page = parseInt(req.query.page, 10) || 1;
+      const pageSize = parseInt(req.query.pageSize, 10) || 10;
+      const result = await ClientService.getAllClients({
+        adminId,
+        page,
+        pageSize,
+      });
+      res.status(200).json(result);
+    } catch (error) {
+      if (error.message === "Unauthorized. Admin ID not found.") {
+        return res.status(401).json({ message: error.message });
+      }
+      next(error);
+    }
+  }
+
+  async getClientById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const adminId = req.user.id;
+      const client = await ClientService.getClientById({ id, adminId });
+      res.status(200).json(client);
+    } catch (error) {
+      if (error.message === "Unauthorized. Admin ID not found.") {
+        return res.status(401).json({ message: error.message });
+      }
+      if (error.message.includes("Client not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes("Forbidden")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  }
+
+  async updateClient(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { id } = req.params;
-    const { 
-        name, 
-        phone, 
-        email, 
-        eventType, 
-        favoriteColors, 
-        dislikedColors, 
-        preferredStyles, 
-        bodyShape, 
-        additionalDetails 
-    } = req.body;
-    const adminId = req.user.id;
-
-    if (!adminId) {
-        return res.status(401).json({ message: 'Unauthorized. Admin ID not found.' });
+      return res.status(400).json({ errors: errors.array() });
     }
 
     try {
-        const existingClient = await prisma.client.findUnique({ where: { id } });
-
-        if (!existingClient) {
-            return res.status(404).json({ message: 'Client not found' });
-        }
-
-        if (existingClient.adminId !== adminId) {
-            return res.status(403).json({ message: 'Forbidden: You cannot update this client' });
-        }
-
-        const updatedClient = await prisma.client.update({
-            where: { id },
-            data: {
-                name: name !== undefined ? name : undefined,
-                phone: phone !== undefined ? phone : undefined,
-                email: email !== undefined ? email : undefined,
-                eventType: eventType !== undefined ? eventType : undefined,
-                favoriteColors: favoriteColors !== undefined ? favoriteColors : undefined,
-                dislikedColors: dislikedColors !== undefined ? dislikedColors : undefined,
-                preferredStyles: preferredStyles !== undefined ? preferredStyles : undefined,
-                bodyShape: bodyShape !== undefined ? bodyShape : undefined,
-                additionalDetails: additionalDetails !== undefined ? additionalDetails : undefined,
-            },
-        });
-        
-        // Clear cache
-        await cache.delPattern(`clients:${adminId}:*`);
-        await cache.del(`client:${id}`);
-        
-        res.status(200).json(updatedClient);
-        getIO().emit("client_updated", updatedClient);
+      const { id } = req.params;
+      const {
+        name,
+        phone,
+        email,
+        eventType,
+        favoriteColors,
+        dislikedColors,
+        preferredStyles,
+        bodyShape,
+        additionalDetails,
+      } = req.body;
+      const adminId = req.user.id;
+      const updatedClient = await ClientService.updateClient({
+        id,
+        adminId,
+        name,
+        phone,
+        email,
+        eventType,
+        favoriteColors,
+        dislikedColors,
+        preferredStyles,
+        bodyShape,
+        additionalDetails,
+      });
+      res.status(200).json(updatedClient);
     } catch (error) {
-        next(error);
+      if (error.message === "Unauthorized. Admin ID not found.") {
+        return res.status(401).json({ message: error.message });
+      }
+      if (error.message.includes("Client not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes("Forbidden")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
     }
-};
+  }
 
-// Delete a client by ID, ensuring it belongs to the authenticated admin
-exports.deleteClient = async (req, res, next) => {
-    const { id } = req.params;
-    const adminId = req.user.id;
-
-    if (!adminId) {
-        return res.status(401).json({ message: 'Unauthorized. Admin ID not found.' });
-    }
-
+  async deleteClient(req, res, next) {
     try {
-        const client = await prisma.client.findUnique({ where: { id } });
-
-        if (!client) {
-            return res.status(404).json({ message: 'Client not found' });
-        }
-
-        if (client.adminId !== adminId) {
-            return res.status(403).json({ message: 'Forbidden: You cannot delete this client' });
-        }
-
-        // Prisma schema has `onDelete: Cascade` for Measurements and StyleImages related to Client,
-        // so they will be deleted automatically by the database.
-        await prisma.client.delete({
-            where: { id },
-        });
-        
-        // Clear cache
-        await cache.delPattern(`clients:${adminId}:*`);
-        await cache.del(`client:${id}`);
-        
-        res.status(200).json({ message: 'Client deleted successfully' });
-        getIO().emit("client_deleted", { id });
+      const { id } = req.params;
+      const adminId = req.user.id;
+      const result = await ClientService.deleteClient({ id, adminId });
+      res.status(200).json(result);
     } catch (error) {
-        if (error.code === 'P2025') { // Prisma error for record to delete not found
-             return res.status(404).json({ message: 'Client not found or already deleted.' });
-        }
-        next(error);
+      if (error.message === "Unauthorized. Admin ID not found.") {
+        return res.status(401).json({ message: error.message });
+      }
+      if (error.message.includes("Client not found")) {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes("Forbidden")) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
     }
-};
+  }
+}
+
+module.exports = new ClientController();
