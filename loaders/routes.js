@@ -17,7 +17,7 @@ module.exports = (app) => {
   app.use("/api/projects", generalApiLimiter, projectRoutes);
   app.use("/api/orders", generalApiLimiter, orderRoutes);
   app.use("/api/events", generalApiLimiter, eventRoutes);
-  app.use("/api/payments", generalApiLimiter, paymentRoutes);
+  app.use("/api/", generalApiLimiter, paymentRoutes);
   app.use("/test", require("../routes/health"));
 
   return app;

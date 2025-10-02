@@ -1,27 +1,45 @@
 const express = require("express");
 const { body, param, query } = require("express-validator");
-const { OrderStatus } = require("@prisma/client");
 const OrderController = require("../controllers/orderController");
 const { authenticateJwt } = require("../middlewares/authMiddleware");
 const {
   generalApiLimiter,
   createOrderLimiter,
 } = require("../middlewares/rateLimitMiddleware");
+const { OrderStatus } = require("@prisma/client");
 
 const router = express.Router();
 
-// Validation for IDs in params
-const validateId = (field) =>
-  param(field)
+// Validation for clientId and eventId
+const validateIds = [
+  param("clientId")
+    .optional()
     .isString()
     .notEmpty()
     .isLength({ min: 25, max: 30 })
     .withMessage(
-      `Invalid ${field} format. Must be a valid CUID (25–30 characters).`
-    );
+      "Invalid client ID format. Must be a valid CUID (25–30 characters)."
+    ),
+  param("eventId")
+    .optional()
+    .isString()
+    .notEmpty()
+    .isLength({ min: 25, max: 30 })
+    .withMessage(
+      "Invalid event ID format. Must be a valid CUID (25–30 characters)."
+    ),
+  param("orderId")
+    .optional()
+    .isString()
+    .notEmpty()
+    .isLength({ min: 25, max: 30 })
+    .withMessage(
+      "Invalid order ID format. Must be a valid CUID (25–30 characters)."
+    ),
+];
 
 // Validation for order creation
-const validateOrderCreation = [
+const validateOrderFields = [
   body("details")
     .optional()
     .isObject()
@@ -37,39 +55,43 @@ const validateOrderCreation = [
   body("price")
     .isFloat({ min: -9999999.99, max: 9999999.99 })
     .withMessage(
-      "Price must be a number between -9,999,999.99 and 9,999,999.99"
-    )
-    .toFloat(),
+      "Price must be a number between -9,999,999.99 and 9,999,999.99."
+    ),
   body("currency")
     .optional()
     .isString()
-    .isLength({ min: 3, max: 3 })
-    .withMessage("Currency must be a 3-letter code (e.g., NGN)."),
+    .isIn(["NGN", "USD", "EUR"]) // Add supported currencies
+    .withMessage("Invalid currency. Must be one of: NGN, USD, EUR."),
   body("dueDate")
     .optional()
+    .isString()
     .matches(/^\d{4}-\d{2}-\d{2}$/)
     .withMessage("Due date must be in YYYY-MM-DD format."),
   body("status")
     .optional()
+    .isString()
     .isIn(Object.values(OrderStatus))
     .withMessage(
-      `Status must be one of: ${Object.values(OrderStatus).join(", ")}`
+      `Status must be one of: ${Object.values(OrderStatus).join(", ")}.`
     ),
   body("projectId")
     .optional()
     .isString()
     .isLength({ min: 25, max: 30 })
-    .withMessage("Project ID must be a valid CUID (25–30 characters)."),
+    .withMessage(
+      "Invalid project ID format. Must be a valid CUID (25–30 characters)."
+    ),
   body("eventId")
     .optional()
     .isString()
     .isLength({ min: 25, max: 30 })
-    .withMessage("Event ID must be a valid CUID (25–30 characters)."),
+    .withMessage(
+      "Invalid event ID format. Must be a valid CUID (25–30 characters)."
+    ),
   body("deposit")
     .optional()
-    .isFloat({ min: 0 })
-    .withMessage("Deposit must be a non-negative number.")
-    .toFloat(),
+    .isFloat({ min: 0, max: 9999999.99 })
+    .withMessage("Deposit must be a positive number up to 9,999,999.99."),
   body("styleDescription")
     .optional()
     .isString()
@@ -79,14 +101,14 @@ const validateOrderCreation = [
     .isArray()
     .withMessage("Style image IDs must be an array.")
     .custom((value) => {
-      if (value.length > 0) {
-        for (const id of value) {
-          if (typeof id !== "string" || id.length < 25 || id.length > 30) {
-            throw new Error(
-              "Each style image ID must be a valid CUID (25–30 characters)."
-            );
-          }
-        }
+      if (
+        !value.every(
+          (id) => typeof id === "string" && id.length >= 25 && id.length <= 30
+        )
+      ) {
+        throw new Error(
+          "Each style image ID must be a valid CUID (25–30 characters)."
+        );
       }
       return true;
     }),
@@ -95,9 +117,11 @@ const validateOrderCreation = [
 // Validation for order status update
 const validateOrderStatus = [
   body("status")
+    .isString()
+    .notEmpty()
     .isIn(Object.values(OrderStatus))
     .withMessage(
-      `Status must be one of: ${Object.values(OrderStatus).join(", ")}`
+      `Status must be one of: ${Object.values(OrderStatus).join(", ")}.`
     ),
 ];
 
@@ -106,38 +130,33 @@ const validatePagination = [
   query("page")
     .optional()
     .isInt({ min: 1 })
-    .withMessage("Page must be a positive integer.")
-    .toInt(),
+    .withMessage("Page must be a positive integer."),
   query("pageSize")
     .optional()
-    .isInt({ min: 1 })
-    .withMessage("Page size must be a positive integer.")
-    .toInt(),
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Page size must be between 1 and 100."),
 ];
 
-// All order routes are protected
+// All routes are protected
 router.use(authenticateJwt);
 
-// Create order for a client
+// Routes
 router.post(
-  "/clients/:clientId",
+  "/client/:clientId",
   createOrderLimiter,
-  validateId("clientId"),
-  validateOrderCreation,
+  validateIds,
+  validateOrderFields,
   OrderController.createOrderForClient
 );
 
-// Create order for an event and client
 router.post(
-  "/events/:eventId/clients/:clientId",
+  "/event/:eventId/client/:clientId",
   createOrderLimiter,
-  validateId("eventId"),
-  validateId("clientId"),
-  validateOrderCreation,
+  validateIds,
+  validateOrderFields,
   OrderController.createOrderForEvent
 );
 
-// Get all orders for admin
 router.get(
   "/",
   generalApiLimiter,
@@ -145,46 +164,41 @@ router.get(
   OrderController.getAllOrdersForAdmin
 );
 
-// Get orders by client ID
 router.get(
-  "/clients/:clientId",
+  "/client/:clientId",
   generalApiLimiter,
-  validateId("clientId"),
+  validateIds,
   validatePagination,
   OrderController.getOrdersByClientId
 );
 
-// Get order by ID
 router.get(
   "/:orderId",
   generalApiLimiter,
-  validateId("orderId"),
+  validateIds,
   OrderController.getOrderById
 );
 
-// Update order status
 router.patch(
   "/:orderId/status",
   generalApiLimiter,
-  validateId("orderId"),
+  validateIds,
   validateOrderStatus,
   OrderController.updateOrderStatus
 );
 
-// Update order details
 router.patch(
   "/:orderId",
   generalApiLimiter,
-  validateId("orderId"),
-  validateOrderCreation, // Reuse create validation, as all fields are optional
+  validateIds,
+  validateOrderFields,
   OrderController.updateOrderDetails
 );
 
-// Delete order
 router.delete(
   "/:orderId",
   generalApiLimiter,
-  validateId("orderId"),
+  validateIds,
   OrderController.deleteOrder
 );
 

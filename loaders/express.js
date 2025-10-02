@@ -48,6 +48,18 @@ module.exports = (app) => {
   app.use(cors(corsOptions));
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
+
+  // Handle invalid JSON payloads from express.json()
+  // body-parser (used internally by express.json) throws a SyntaxError when JSON is malformed.
+  // Catch those here and return a 400 with a helpful message instead of letting the error bubble uncontrolled.
+  app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+      // Bad JSON
+      console.warn("Invalid JSON received:", err.message);
+      return res.status(400).json({ message: "Invalid JSON payload" });
+    }
+    next(err);
+  });
   app.use(passport.initialize());
 
   // Optional: log active CORS mode

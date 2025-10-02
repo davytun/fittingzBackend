@@ -44,6 +44,17 @@ const createClientLimiter = rateLimit({
   },
 });
 
+const measurementLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message:
+      "Too many measurement creation attempts from this IP, please try again after 15 minutes.",
+  },
+});
+
 const createOrderLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -52,17 +63,6 @@ const createOrderLimiter = rateLimit({
   message: {
     message:
       "Too many order creation attempts from this IP, please try again after 15 minutes.",
-  },
-});
-
-const measurementLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    message:
-      "Too many measurement creation attempts from this IP, please try again after 15 minutes.",
   },
 });
 
@@ -83,6 +83,6 @@ module.exports = {
   resendLimiter,
   createClientLimiter,
   measurementLimiter,
-  generalApiLimiter,
   createOrderLimiter,
+  generalApiLimiter,
 };

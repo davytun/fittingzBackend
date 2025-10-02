@@ -92,7 +92,7 @@ enum OrderStatus {
 
 model Order {
   id               String            @id @default(cuid())
-  orderNumber      String            @unique
+  orderNumber      String           
   details          Json?
   price            Decimal           @db.Decimal(10, 2)
   currency         String            @default("NGN")
