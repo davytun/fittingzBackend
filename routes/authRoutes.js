@@ -29,7 +29,7 @@ const validateRegisterInput = [
     .withMessage("Business name is required."),
   body("contactPhone")
     .optional({ checkFalsy: true })
-    .matches(/^\+?[1-9]\d{1,14}$/)
+    .matches(/^(\+?\d{1,15}|0\d{10,14})$/)
     .withMessage("Invalid phone number format."),
   body("businessAddress")
     .optional({ checkFalsy: true })
