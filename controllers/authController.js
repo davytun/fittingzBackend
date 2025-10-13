@@ -67,6 +67,54 @@ class AdminController {
       res.status(401).json({ message: error.message });
     }
   }
+
+  async forgotPassword(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const result = await AdminService.forgotPassword(req.body.email);
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error during forgot password:', error);
+      if (error.message.includes('Email not verified')) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  }
+
+  async verifyResetCode(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const result = await AdminService.verifyResetCode(req.body);
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error during reset code verification:', error);
+      next(error);
+    }
+  }
+
+  async resetPassword(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const result = await AdminService.resetPassword(req.body);
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error during password reset:', error);
+      next(error);
+    }
+  }
 }
 
 module.exports = new AdminController();

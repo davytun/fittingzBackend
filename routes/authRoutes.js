@@ -88,4 +88,59 @@ router.post(
   authController.resendVerificationEmail
 );
 
+const validateForgotPasswordInput = [
+  body("email")
+    .isEmail()
+    .withMessage("Please enter a valid email address.")
+    .normalizeEmail(),
+];
+
+const validateVerifyResetCodeInput = [
+  body("email")
+    .isEmail()
+    .withMessage("Please enter a valid email address.")
+    .normalizeEmail(),
+  body("resetCode")
+    .isString()
+    .isLength({ min: 6, max: 6 })
+    .withMessage("Reset code must be 6 characters long."),
+];
+
+const validateResetPasswordInput = [
+  body("email")
+    .isEmail()
+    .withMessage("Please enter a valid email address.")
+    .normalizeEmail(),
+  body("resetCode")
+    .isString()
+    .isLength({ min: 6, max: 6 })
+    .withMessage("Reset code must be 6 characters long."),
+  body("newPassword")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long.")
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/
+    )
+    .withMessage(
+      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character."
+    ),
+];
+
+router.post(
+  "/forgot-password",
+  resendLimiter,
+  validateForgotPasswordInput,
+  authController.forgotPassword
+);
+router.post(
+  "/verify-reset-code",
+  validateVerifyResetCodeInput,
+  authController.verifyResetCode
+);
+router.post(
+  "/reset-password",
+  validateResetPasswordInput,
+  authController.resetPassword
+);
+
 module.exports = router;

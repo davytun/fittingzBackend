@@ -374,3 +374,197 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Authentication]
+ *     description: Sends a 6-digit password reset code to the admin's email. Rate-limited to 5 requests per 15 minutes per IP.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The admin's email address.
+ *                 example: admin@example.com
+ *     responses:
+ *       200:
+ *         description: Password reset code sent successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Password reset code has been sent to your email. Please check your inbox.
+ *       400:
+ *         description: Validation errors.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Email not verified.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Email not verified. Please verify your email before resetting password.
+ *       404:
+ *         description: Admin not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       429:
+ *         description: Too many password reset attempts.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Too many password reset attempts from this IP, please try again after 15 minutes.
+ *       500:
+ *         description: Server error or failed to send email.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /api/auth/verify-reset-code:
+ *   post:
+ *     summary: Verify password reset code
+ *     tags: [Authentication]
+ *     description: Verifies the 6-digit password reset code before allowing password reset.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - resetCode
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The admin's email address.
+ *                 example: admin@example.com
+ *               resetCode:
+ *                 type: string
+ *                 description: The 6-digit reset code sent to the admin's email.
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: Reset code verified successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Reset code verified successfully. You can now reset your password.
+ *                 verified:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: Validation errors or invalid/expired code.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Admin not found or no active reset code.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password
+ *     tags: [Authentication]
+ *     description: Resets the admin's password using the verified reset code.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - resetCode
+ *               - newPassword
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The admin's email address.
+ *                 example: admin@example.com
+ *               resetCode:
+ *                 type: string
+ *                 description: The 6-digit reset code sent to the admin's email.
+ *                 example: "123456"
+ *               newPassword:
+ *                 type: string
+ *                 description: The new password (min 6 characters, must include uppercase, lowercase, number, and special character).
+ *                 example: NewPassword123!
+ *     responses:
+ *       200:
+ *         description: Password reset successful.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Password reset successful. You can now log in with your new password.
+ *       400:
+ *         description: Validation errors, invalid/expired code, or new password same as old.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Admin not found or no active reset code.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */

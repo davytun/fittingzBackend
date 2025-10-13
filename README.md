@@ -9,7 +9,7 @@ This is the backend API for the Fashion Designer Web Application. It provides a 
 *   **Measurements**: Store detailed client measurements.
 *   **Style Inspiration**: Upload and categorize style images for clients or general inspiration.
 *   **Event Management**: Track events and link clients and orders to them.
-*   **Authentication**: Secure JWT-based authentication for administrators.
+*   **Authentication**: Secure JWT-based authentication for administrators with email verification and password reset.
 *   **Real-time Updates**: Socket.io integration for real-time communication.
 *   **API Documentation**: Interactive API documentation powered by Swagger.
 
@@ -18,6 +18,7 @@ This is the backend API for the Fashion Designer Web Application. It provides a 
 *   [Installation](#installation)
 *   [Usage](#usage)
 *   [API Documentation](#api-documentation)
+*   [Authentication Features](#authentication-features)
 *   [Project Structure](#project-structure)
 *   [Configuration](#configuration)
 *   [Contributing](#contributing)
@@ -81,6 +82,34 @@ The server will start on the port specified in your `.env` file (defaulting to 5
 ## API Documentation
 
 The API is documented using Swagger. Once the server is running, you can access the interactive API documentation at `http://localhost:5000/api-docs` (or your configured base URL).
+
+## Authentication Features
+
+The API includes a complete authentication system with the following features:
+
+### Email Verification
+*   6-digit verification codes sent via email
+*   15-minute code expiration
+*   Resend verification option
+
+### Password Reset (Forgot Password)
+*   Secure password reset flow with 6-digit codes
+*   Email-based verification
+*   Strong password requirements
+*   Rate limiting to prevent abuse
+
+For detailed documentation on the forgot password feature, see:
+*   **[Forgot Password Guide](FORGOT_PASSWORD_GUIDE.md)** - Complete implementation guide
+*   **[Forgot Password Summary](FORGOT_PASSWORD_SUMMARY.md)** - Quick reference
+
+### Authentication Endpoints
+*   `POST /api/auth/register` - Register new admin
+*   `POST /api/auth/login` - Admin login
+*   `POST /api/auth/verify-email` - Verify email with code
+*   `POST /api/auth/resend-verification` - Resend verification code
+*   `POST /api/auth/forgot-password` - Request password reset
+*   `POST /api/auth/verify-reset-code` - Verify reset code
+*   `POST /api/auth/reset-password` - Reset password
 
 ## Project Structure
 
