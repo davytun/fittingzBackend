@@ -39,8 +39,8 @@ const validateClientCreation = [
     .normalizeEmail(),
   body("phone")
     .optional({ checkFalsy: true })
-    .matches(/^\+?[1-9]\d{1,14}$/)
-    .withMessage("Phone number must be in E.164 format (e.g., +1234567890)."),
+    .matches(/^[\d\s\-\+\(\)]{7,20}$/)
+    .withMessage("Please provide a valid phone number."),
   body("eventType")
     .optional({ checkFalsy: true })
     .isString()
@@ -81,8 +81,8 @@ const validateClientUpdate = [
     .normalizeEmail(),
   body("phone")
     .optional({ checkFalsy: true })
-    .matches(/^\+?[1-9]\d{1,14}$/)
-    .withMessage("Phone number must be in E.164 format (e.g., +1234567890)."),
+    .matches(/^[\d\s\-\+\(\)]{7,20}$/)
+    .withMessage("Please provide a valid phone number."),
   body("eventType")
     .optional({ checkFalsy: true })
     .isString()
