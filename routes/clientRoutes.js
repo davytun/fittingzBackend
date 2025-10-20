@@ -41,10 +41,10 @@ const validateClientCreation = [
     .optional({ checkFalsy: true })
     .matches(/^[\d\s\-\+\(\)]{7,20}$/)
     .withMessage("Please provide a valid phone number."),
-  body("eventType")
+  body("gender")
     .optional({ checkFalsy: true })
     .isString()
-    .withMessage("Event type must be a string."),
+    .withMessage("Gender must be a string."),
   body("favoriteColors")
     .optional()
     .isArray()
@@ -83,10 +83,10 @@ const validateClientUpdate = [
     .optional({ checkFalsy: true })
     .matches(/^[\d\s\-\+\(\)]{7,20}$/)
     .withMessage("Please provide a valid phone number."),
-  body("eventType")
+  body("gender")
     .optional({ checkFalsy: true })
     .isString()
-    .withMessage("Event type must be a string."),
+    .withMessage("Gender must be a string."),
   body("favoriteColors")
     .optional()
     .isArray()

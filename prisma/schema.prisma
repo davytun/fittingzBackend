@@ -141,7 +141,7 @@ model Client {
   name              String
   phone             String?
   email             String?
-  eventType         String?
+  gender            String?
   favoriteColors    String[]      @default([])
   dislikedColors    String[]      @default([])
   preferredStyles   String[]      @default([])

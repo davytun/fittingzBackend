@@ -5,7 +5,7 @@ const { getIO } = require("../socket");
 const prisma = new PrismaClient();
 
 class ClientService {
-  async createClient({ name, phone, email, eventType, adminId }) {
+  async createClient({ name, phone, email, gender, adminId }) {
     if (!adminId) {
       throw new Error("Unauthorized. Admin ID not found.");
     }
@@ -15,7 +15,7 @@ class ClientService {
         name,
         phone,
         email,
-        eventType,
+        gender,
         admin: { connect: { id: adminId } },
       },
       select: {
@@ -23,7 +23,7 @@ class ClientService {
         name: true,
         phone: true,
         email: true,
-        eventType: true,
+        gender: true,
         adminId: true,
         createdAt: true,
         updatedAt: true,
@@ -63,7 +63,7 @@ class ClientService {
         name: true,
         phone: true,
         email: true,
-        eventType: true,
+        gender: true,
         adminId: true,
         createdAt: true,
         updatedAt: true,
@@ -105,7 +105,7 @@ class ClientService {
         name: true,
         phone: true,
         email: true,
-        eventType: true,
+        gender: true,
         favoriteColors: true,
         dislikedColors: true,
         preferredStyles: true,
@@ -153,7 +153,7 @@ class ClientService {
     name,
     phone,
     email,
-    eventType,
+    gender,
     favoriteColors,
     dislikedColors,
     preferredStyles,
@@ -179,7 +179,7 @@ class ClientService {
         name: name !== undefined ? name : undefined,
         phone: phone !== undefined ? phone : undefined,
         email: email !== undefined ? email : undefined,
-        eventType: eventType !== undefined ? eventType : undefined,
+        gender: gender !== undefined ? gender : undefined,
         favoriteColors:
           favoriteColors !== undefined ? favoriteColors : undefined,
         dislikedColors:
@@ -195,7 +195,7 @@ class ClientService {
         name: true,
         phone: true,
         email: true,
-        eventType: true,
+        gender: true,
         favoriteColors: true,
         dislikedColors: true,
         preferredStyles: true,

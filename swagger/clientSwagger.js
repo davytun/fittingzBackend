@@ -24,10 +24,10 @@
  *           description: The client's email address (optional).
  *           example: john.doe@example.com
  *           nullable: true
- *         eventType:
+ *         gender:
  *           type: string
- *           description: The type of event the client is associated with (optional).
- *           example: Wedding
+ *           description: The client's gender (optional).
+ *           example: Male
  *           nullable: true
  *         favoriteColors:
  *           type: array
@@ -174,10 +174,10 @@
  *           format: email
  *           description: The client's email address (optional).
  *           example: john.doe@example.com
- *         eventType:
+ *         gender:
  *           type: string
- *           description: The type of event the client is associated with (optional).
- *           example: Wedding
+ *           description: The client's gender (optional).
+ *           example: Male
  *         favoriteColors:
  *           type: array
  *           items:

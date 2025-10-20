@@ -9,13 +9,13 @@ class ClientController {
     }
 
     try {
-      const { name, phone, email, eventType } = req.body;
+      const { name, phone, email, gender } = req.body;
       const adminId = req.user.id;
       const client = await ClientService.createClient({
         name,
         phone,
         email,
-        eventType,
+        gender,
         adminId,
       });
       res.status(201).json(client);
@@ -83,7 +83,7 @@ class ClientController {
         name,
         phone,
         email,
-        eventType,
+        gender,
         favoriteColors,
         dislikedColors,
         preferredStyles,
@@ -97,7 +97,7 @@ class ClientController {
         name,
         phone,
         email,
-        eventType,
+        gender,
         favoriteColors,
         dislikedColors,
         preferredStyles,
