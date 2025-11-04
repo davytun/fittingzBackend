@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,47 +12,32 @@ model Admin {
   email              String              @unique
   password           String
   businessName       String
-  contactPhone       String? // Optional
-  businessAddress    String? // Optional
-  clients            Client[]
-  styleImages        StyleImage[] // Added relation to StyleImage
+  contactPhone       String?
+  businessAddress    String?
   isEmailVerified    Boolean             @default(false)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  clients            Client[]
+  Event              Event[]
+  Order              Order[]
+  Project            Project[]
+  styleImages        StyleImage[]
   verificationTokens VerificationToken[]
-
-  Project Project[]
-  Order   Order[]
-  Event   Event[]
-}
-
-enum TokenType {
-  EMAIL_VERIFICATION
-  PASSWORD_RESET
 }
 
 model VerificationToken {
   id        String    @id @default(cuid())
-  token     String    @unique // This will store the hashed token
+  token     String    @unique
   type      TokenType
-  email     String // Email of the user this token is for
-  adminId   String? // Link to the admin user
+  email     String
+  adminId   String?
   expiresAt DateTime
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-
-  admin Admin? @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin     Admin?    @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@index([email, type])
   @@index([adminId])
-}
-
-enum ProjectStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  ON_HOLD
-  CANCELLED
 }
 
 model Project {
@@ -64,35 +46,23 @@ model Project {
   description String?
   status      ProjectStatus @default(PENDING)
   startDate   DateTime?
-  dueDate     DateTime? // Changed from endDate to dueDate for clarity
+  dueDate     DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  adminId String
-  admin   Admin   @relation(fields: [adminId], references: [id], onDelete: Cascade)
-  Order   Order[]
+  clientId    String
+  adminId     String
+  Order       Order[]
+  admin       Admin         @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  client      Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId])
   @@index([adminId])
   @@index([status])
 }
 
-enum OrderStatus {
-  PENDING_PAYMENT
-  PROCESSING
-  READY_FOR_PICKUP
-  SHIPPED
-  DELIVERED
-  COMPLETED
-  CANCELLED
-}
-
 model Order {
   id               String            @id @default(cuid())
-  orderNumber      String           
+  orderNumber      String
   details          Json?
   price            Decimal           @db.Decimal(10, 2)
   currency         String            @default("NGN")
@@ -103,13 +73,14 @@ model Order {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   clientId         String
-  client           Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
   adminId          String
-  admin            Admin             @relation(fields: [adminId], references: [id], onDelete: Cascade)
   projectId        String?
-  project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
   eventId          String?
-  event            Event?            @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  measurements     Measurement[]
+  admin            Admin             @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  client           Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  event            Event?            @relation(fields: [eventId], references: [id])
+  project          Project?          @relation(fields: [projectId], references: [id])
   styleImages      OrderStyleImage[]
   payments         Payment[]
 
@@ -122,14 +93,12 @@ model Order {
 }
 
 model OrderStyleImage {
-  id      String @id @default(cuid())
-  orderId String
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
+  id           String     @id @default(cuid())
+  orderId      String
   styleImageId String
+  createdAt    DateTime   @default(now())
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
   styleImage   StyleImage @relation(fields: [styleImageId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
 
   @@unique([orderId, styleImageId])
   @@index([orderId])
@@ -149,43 +118,46 @@ model Client {
   additionalDetails String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
-  admin             Admin         @relation(fields: [adminId], references: [id])
   adminId           String
-  measurements      Measurement[]
-  styleImages       StyleImage[]
-  Project           Project[]
-  Order             Order[]
+  admin             Admin         @relation(fields: [adminId], references: [id])
   events            EventClient[]
+  measurements      Measurement[]
+  Order             Order[]
+  Project           Project[]
+  styleImages       StyleImage[]
 
   @@index([adminId])
 }
 
 model Measurement {
   id        String   @id @default(cuid())
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientId  String
+  orderId   String?
   fields    Json
+  isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  @@unique([clientId])
   @@index([clientId])
+  @@index([orderId])
+  @@index([clientId, isDefault])
 }
 
 model StyleImage {
-  id          String   @id @default(cuid())
-  client      Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  clientId    String? // Made optional to support admin-owned images
-  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
-  adminId     String // Added to link images to admin
-  imageUrl    String
-  publicId    String
-  category    String?
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id               String            @id @default(cuid())
+  clientId         String?
+  adminId          String
+  imageUrl         String
+  publicId         String
+  category         String?
+  description      String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
   orderStyleImages OrderStyleImage[]
+  admin            Admin             @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  client           Client?           @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([clientId])
   @@index([adminId])
@@ -214,8 +186,8 @@ model EventClient {
   clientId  String
   role      String?
   createdAt DateTime @default(now())
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, clientId])
   @@index([eventId])
@@ -230,8 +202,30 @@ model Payment {
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum ProjectStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PROCESSING
+  READY_FOR_PICKUP
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
 }

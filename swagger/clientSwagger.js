@@ -29,34 +29,6 @@
  *           description: The client's gender (optional).
  *           example: Male
  *           nullable: true
- *         favoriteColors:
- *           type: array
- *           items:
- *             type: string
- *           description: The client's favorite colors (optional).
- *           example: ["Blue", "Red"]
- *         dislikedColors:
- *           type: array
- *           items:
- *             type: string
- *           description: The client's disliked colors (optional).
- *           example: ["Green"]
- *         preferredStyles:
- *           type: array
- *           items:
- *             type: string
- *           description: The client's preferred styles (optional).
- *           example: ["Casual", "Formal"]
- *         bodyShape:
- *           type: string
- *           description: The client's body shape (optional).
- *           example: Pear
- *           nullable: true
- *         additionalDetails:
- *           type: string
- *           description: Additional details about the client (optional).
- *           example: Prefers lightweight fabrics
- *           nullable: true
  *         adminId:
  *           type: string
  *           description: The ID of the admin who owns this client.
@@ -124,6 +96,39 @@
  *               type: integer
  *               example: 2
  *           nullable: true
+ *     ClientWithPreferences:
+ *       allOf:
+ *         - $ref: '#/components/schemas/Client'
+ *         - type: object
+ *           properties:
+ *             favoriteColors:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               description: The client's favorite colors (optional).
+ *               example: ["Blue", "Red"]
+ *             dislikedColors:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               description: The client's disliked colors (optional).
+ *               example: ["Green"]
+ *             preferredStyles:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               description: The client's preferred styles (optional).
+ *               example: ["Casual", "Formal"]
+ *             bodyShape:
+ *               type: string
+ *               description: The client's body shape (optional).
+ *               example: Pear
+ *               nullable: true
+ *             additionalDetails:
+ *               type: string
+ *               description: Additional details about the client (optional).
+ *               example: Prefers lightweight fabrics
+ *               nullable: true
  *     Measurement:
  *       type: object
  *       properties:
@@ -135,10 +140,19 @@
  *           type: string
  *           description: The ID of the client associated with the measurement.
  *           example: cmg5c2q7y0000tv4cpuk0wqa0
+ *         orderId:
+ *           type: string
+ *           nullable: true
+ *           description: The ID of the order associated with the measurement (optional).
+ *           example: cmg5c2q7y0000tv4cpuk0wqa2
  *         fields:
  *           type: object
  *           description: The measurement fields (e.g., bust, waist). Arbitrary key-value pairs.
  *           example: { "bust": 90, "waist": "70cm", "isCustom": true }
+ *         isDefault:
+ *           type: boolean
+ *           description: Whether this is the default measurement for the client.
+ *           example: true
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -156,6 +170,14 @@
  *               type: string
  *               example: John Doe
  *           description: The client's name.
+ *         order:
+ *           type: object
+ *           nullable: true
+ *           properties:
+ *             orderNumber:
+ *               type: string
+ *               example: ORD-001
+ *           description: The order details (if measurement is tied to an order).
  *     CreateClientRequest:
  *       type: object
  *       required:
@@ -178,32 +200,6 @@
  *           type: string
  *           description: The client's gender (optional).
  *           example: Male
- *         favoriteColors:
- *           type: array
- *           items:
- *             type: string
- *           description: The client's favorite colors (optional).
- *           example: ["Blue", "Red"]
- *         dislikedColors:
- *           type: array
- *           items:
- *             type: string
- *           description: The client's disliked colors (optional).
- *           example: ["Green"]
- *         preferredStyles:
- *           type: array
- *           items:
- *             type: string
- *           description: The client's preferred styles (optional).
- *           example: ["Casual", "Formal"]
- *         bodyShape:
- *           type: string
- *           description: The client's body shape (optional).
- *           example: Pear
- *         additionalDetails:
- *           type: string
- *           description: Additional details about the client (optional).
- *           example: Prefers lightweight fabrics
  *     CreateMeasurementRequest:
  *       type: object
  *       required:
@@ -213,6 +209,14 @@
  *           type: object
  *           description: The measurement fields (e.g., bust, waist). Must be a non-empty JSON object with arbitrary key-value pairs.
  *           example: { "bust": 90, "waist": "70cm", "isCustom": true, "details": { "note": "tight fit" } }
+ *         orderId:
+ *           type: string
+ *           description: The ID of the order to associate with this measurement (optional).
+ *           example: cmg5c2q7y0000tv4cpuk0wqa2
+ *         isDefault:
+ *           type: boolean
+ *           description: Whether this should be the default measurement for the client (optional). First measurement is automatically default.
+ *           example: false
  *     ClientListResponse:
  *       type: object
  *       properties:
@@ -549,9 +553,9 @@
  *
  * /api/clients/{clientId}/measurements:
  *   post:
- *     summary: Add or update measurements for a client
+ *     summary: Add measurements for a client
  *     tags: [Measurements]
- *     description: Adds or updates measurements for a specific client, identified by clientId. Requires JWT authentication. Rate-limited to 20 requests per 15 minutes per IP.
+ *     description: Adds measurements for a specific client, identified by clientId. Can be tied to a specific order or set as default. First measurement is automatically default. Requires JWT authentication. Rate-limited to 20 requests per 15 minutes per IP.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -568,8 +572,8 @@
  *           schema:
  *             $ref: '#/components/schemas/CreateMeasurementRequest'
  *     responses:
- *       200:
- *         description: Measurement added or updated successfully.
+ *       201:
+ *         description: Measurement added successfully.
  *         content:
  *           application/json:
  *             schema:
@@ -618,7 +622,7 @@
  *   get:
  *     summary: Get measurements for a client
  *     tags: [Measurements]
- *     description: Retrieves measurements for a specific client, identified by clientId. Returns an empty measurement object if none exists. Rate-limited to 100 requests per 15 minutes per IP.
+ *     description: Retrieves all measurements for a specific client, identified by clientId. Returns array of measurements ordered by default first, then by creation date. Rate-limited to 100 requests per 15 minutes per IP.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -630,11 +634,13 @@
  *         description: The client ID (CUID, 25–30 characters).
  *     responses:
  *       200:
- *         description: Measurement details or empty measurement object.
+ *         description: Array of measurements for the client.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Measurement'
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Measurement'
  *       401:
  *         description: Unauthorized (missing or invalid JWT).
  *         content:
@@ -670,30 +676,40 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *
- *   delete:
- *     summary: Delete measurements for a client
+ *
+ * /api/clients/measurements/{id}:
+ *   put:
+ *     summary: Update a measurement by ID
  *     tags: [Measurements]
- *     description: Deletes measurements for a specific client, identified by clientId. Rate-limited to 100 requests per 15 minutes per IP.
+ *     description: Updates a specific measurement by ID. Can update fields and default status. Rate-limited to 100 requests per 15 minutes per IP.
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: clientId
+ *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: The client ID (CUID, 25–30 characters).
+ *         description: The measurement ID (CUID, 25–30 characters).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateMeasurementRequest'
  *     responses:
  *       200:
- *         description: Measurements deleted successfully.
+ *         description: Measurement updated successfully.
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Measurements deleted successfully for client.
+ *               $ref: '#/components/schemas/Measurement'
+ *       400:
+ *         description: Validation errors.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Unauthorized (missing or invalid JWT).
  *         content:
@@ -701,19 +717,40 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       403:
- *         description: Forbidden (client belongs to another admin).
+ *         description: Forbidden (measurement belongs to another admin).
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
- *         description: Client or measurements not found.
+ *         description: Measurement not found.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       429:
- *         description: Too many requests.
+ *       500:
+ *         description: Server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
+ *   delete:
+ *     summary: Delete a measurement by ID
+ *     tags: [Measurements]
+ *     description: Deletes a specific measurement by ID. Rate-limited to 100 requests per 15 minutes per IP.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The measurement ID (CUID, 25–30 characters).
+ *     responses:
+ *       200:
+ *         description: Measurement deleted successfully.
  *         content:
  *           application/json:
  *             schema:
@@ -721,7 +758,25 @@
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Too many requests from this IP, please try again after 15 minutes.
+ *                   example: Measurement deleted successfully.
+ *       401:
+ *         description: Unauthorized (missing or invalid JWT).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden (measurement belongs to another admin).
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Measurement not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error.
  *         content:

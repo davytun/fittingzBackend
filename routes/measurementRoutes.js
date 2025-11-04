@@ -37,6 +37,15 @@ const validateMeasurementFields = [
       }
       return true;
     }),
+  body("orderId")
+    .optional()
+    .isString()
+    .isLength({ min: 25, max: 30 })
+    .withMessage("Order ID must be a valid CUID (25–30 characters)."),
+  body("isDefault")
+    .optional()
+    .isBoolean()
+    .withMessage("isDefault must be a boolean value."),
 ];
 
 // All measurement routes are protected
@@ -48,7 +57,7 @@ router.post(
   measurementLimiter,
   validateClientIdInParam,
   validateMeasurementFields,
-  MeasurementController.addOrUpdateMeasurement
+  MeasurementController.addMeasurement
 );
 
 router.get(
@@ -58,11 +67,21 @@ router.get(
   MeasurementController.getMeasurementsByClientId
 );
 
-router.delete(
-  "/:clientId/measurements",
+router.put(
+  "/measurements/:id",
   generalApiLimiter,
-  validateClientIdInParam,
-  MeasurementController.deleteMeasurementsByClientId
+  param("id").isString().notEmpty().isLength({ min: 25, max: 30 }),
+  validateMeasurementFields,
+  MeasurementController.updateMeasurement
 );
+
+router.delete(
+  "/measurements/:id",
+  generalApiLimiter,
+  param("id").isString().notEmpty().isLength({ min: 25, max: 30 }),
+  MeasurementController.deleteMeasurement
+);
+
+
 
 module.exports = router;

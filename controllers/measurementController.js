@@ -2,7 +2,7 @@ const { validationResult } = require('express-validator');
 const MeasurementService = require('../services/measurementService');
 
 class MeasurementController {
-  async addOrUpdateMeasurement(req, res, next) {
+  async addMeasurement(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -10,19 +10,16 @@ class MeasurementController {
 
     try {
       const { clientId } = req.params;
-      const { fields } = req.body;
+      const { orderId, fields, isDefault } = req.body;
       const adminId = req.user.id;
-      const measurement = await MeasurementService.addOrUpdateMeasurement({ clientId, fields, adminId });
-      res.status(200).json(measurement);
+      const measurement = await MeasurementService.addMeasurement({ clientId, orderId, fields, isDefault, adminId });
+      res.status(201).json(measurement);
     } catch (error) {
-      if (error.message === 'Client not found') {
+      if (error.message === 'Client not found' || error.message === 'Order not found') {
         return res.status(404).json({ message: error.message });
       }
       if (error.message.includes('Forbidden')) {
         return res.status(403).json({ message: error.message });
-      }
-      if (error.code === 'P2002') {
-        return res.status(409).json({ message: 'Measurement record for this client already being processed.' });
       }
       next(error);
     }
@@ -32,8 +29,8 @@ class MeasurementController {
     try {
       const { clientId } = req.params;
       const adminId = req.user.id;
-      const measurement = await MeasurementService.getMeasurementsByClientId({ clientId, adminId });
-      res.status(200).json(measurement);
+      const measurements = await MeasurementService.getMeasurementsByClientId({ clientId, adminId });
+      res.status(200).json(measurements);
     } catch (error) {
       if (error.message === 'Client not found') {
         return res.status(404).json({ message: error.message });
@@ -45,25 +42,47 @@ class MeasurementController {
     }
   }
 
-  async deleteMeasurementsByClientId(req, res, next) {
+  async updateMeasurement(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     try {
-      const { clientId } = req.params;
+      const { id } = req.params;
+      const { fields, isDefault } = req.body;
       const adminId = req.user.id;
-      const result = await MeasurementService.deleteMeasurementsByClientId({ clientId, adminId });
-      res.status(200).json(result);
+      const measurement = await MeasurementService.updateMeasurement({ id, fields, isDefault, adminId });
+      res.status(200).json(measurement);
     } catch (error) {
-      if (error.message === 'Client not found' || error.message.includes('No measurements found')) {
+      if (error.message === 'Measurement not found') {
         return res.status(404).json({ message: error.message });
       }
       if (error.message.includes('Forbidden')) {
         return res.status(403).json({ message: error.message });
       }
-      if (error.code === 'P2025') {
-        return res.status(404).json({ message: 'No measurements found for this client to delete or already deleted.' });
+      next(error);
+    }
+  }
+
+  async deleteMeasurement(req, res, next) {
+    try {
+      const { id } = req.params;
+      const adminId = req.user.id;
+      const result = await MeasurementService.deleteMeasurement({ id, adminId });
+      res.status(200).json(result);
+    } catch (error) {
+      if (error.message === 'Measurement not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes('Forbidden')) {
+        return res.status(403).json({ message: error.message });
       }
       next(error);
     }
   }
+
+
 }
 
 module.exports = new MeasurementController();

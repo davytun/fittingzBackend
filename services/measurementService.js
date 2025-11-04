@@ -5,7 +5,7 @@ const { getIO } = require("../socket");
 const prisma = new PrismaClient();
 
 class MeasurementService {
-  async addOrUpdateMeasurement({ clientId, fields, adminId }) {
+  async addMeasurement({ clientId, orderId, fields, isDefault = false, adminId }) {
     if (!adminId) {
       throw new Error("Unauthorized. Admin ID not found.");
     }
@@ -24,29 +24,62 @@ class MeasurementService {
       );
     }
 
-    // Upsert measurement
-    const measurement = await prisma.measurement.upsert({
-      where: { clientId },
-      update: { fields: fields || {} },
-      create: {
+    // If orderId is provided, verify order exists and belongs to the client
+    if (orderId) {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { id: true, clientId: true, adminId: true },
+      });
+      if (!order) {
+        throw new Error("Order not found");
+      }
+      if (order.clientId !== clientId || order.adminId !== adminId) {
+        throw new Error("Forbidden: Order does not belong to this client");
+      }
+    }
+
+    // Check if there's already a default measurement for this client
+    const hasDefault = await prisma.measurement.findFirst({
+      where: { clientId, isDefault: true },
+    });
+    
+    // If no default exists, make this one default
+    const shouldBeDefault = !hasDefault || isDefault;
+    
+    // If setting as default, unset other default measurements for this client
+    if (shouldBeDefault) {
+      await prisma.measurement.updateMany({
+        where: { clientId, isDefault: true },
+        data: { isDefault: false },
+      });
+    }
+
+    // Create new measurement
+    const measurement = await prisma.measurement.create({
+      data: {
         clientId,
+        orderId,
         fields: fields || {},
+        isDefault: shouldBeDefault,
       },
       select: {
         id: true,
         clientId: true,
+        orderId: true,
         fields: true,
+        isDefault: true,
         createdAt: true,
         updatedAt: true,
         client: { select: { name: true } },
+        order: { select: { orderNumber: true } },
       },
     });
 
     // Clear cache for client's measurements
-    await cache.del(`measurement:${clientId}`);
+    await cache.del(`measurements:${clientId}`);
 
     // Emit Socket.IO event
-    getIO().emit("measurement_updated", measurement);
+    getIO().emit("measurement_created", measurement);
 
     return measurement;
   }
@@ -70,78 +103,122 @@ class MeasurementService {
       );
     }
 
-    const cacheKey = `measurement:${clientId}`;
+    const cacheKey = `measurements:${clientId}`;
     const cachedData = await cache.get(cacheKey);
     if (cachedData) {
       return cachedData;
     }
 
-    const measurement = await prisma.measurement.findUnique({
+    const measurements = await prisma.measurement.findMany({
       where: { clientId },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
       select: {
         id: true,
         clientId: true,
+        orderId: true,
         fields: true,
+        isDefault: true,
         createdAt: true,
         updatedAt: true,
         client: { select: { name: true } },
+        order: { select: { orderNumber: true } },
       },
     });
 
-    const result = measurement || {
-      id: null,
-      clientId,
-      fields: {},
-      createdAt: null,
-      updatedAt: null,
-      client: { name: client.name },
-    };
-
     // Cache for 5 minutes
-    await cache.set(cacheKey, result, 300);
+    await cache.set(cacheKey, measurements, 300);
 
-    return result;
+    return measurements;
   }
 
-  async deleteMeasurementsByClientId({ clientId, adminId }) {
+  async updateMeasurement({ id, fields, isDefault, adminId }) {
     if (!adminId) {
       throw new Error("Unauthorized. Admin ID not found.");
     }
 
-    // Verify client exists and belongs to the admin
-    const client = await prisma.client.findUnique({
-      where: { id: clientId },
-      select: { id: true, adminId: true },
+    // Verify measurement exists and belongs to the admin
+    const existingMeasurement = await prisma.measurement.findUnique({
+      where: { id },
+      select: { id: true, clientId: true, client: { select: { adminId: true } } },
     });
-    if (!client) {
-      throw new Error("Client not found");
+    if (!existingMeasurement) {
+      throw new Error("Measurement not found");
     }
-    if (client.adminId !== adminId) {
+    if (existingMeasurement.client.adminId !== adminId) {
       throw new Error(
-        "Forbidden: You cannot delete measurements for this client."
+        "Forbidden: You cannot update this measurement."
       );
     }
 
-    const existingMeasurement = await prisma.measurement.findUnique({
-      where: { clientId },
-      select: { id: true },
-    });
-    if (!existingMeasurement) {
-      throw new Error("No measurements found for this client to delete.");
+    // If setting as default, unset other default measurements for this client
+    if (isDefault) {
+      await prisma.measurement.updateMany({
+        where: { clientId: existingMeasurement.clientId, isDefault: true },
+        data: { isDefault: false },
+      });
     }
 
-    await prisma.measurement.delete({
-      where: { clientId },
+    const measurement = await prisma.measurement.update({
+      where: { id },
+      data: {
+        fields: fields !== undefined ? fields : undefined,
+        isDefault: isDefault !== undefined ? isDefault : undefined,
+      },
+      select: {
+        id: true,
+        clientId: true,
+        orderId: true,
+        fields: true,
+        isDefault: true,
+        createdAt: true,
+        updatedAt: true,
+        client: { select: { name: true } },
+        order: { select: { orderNumber: true } },
+      },
     });
 
     // Clear cache
-    await cache.del(`measurement:${clientId}`);
+    await cache.del(`measurements:${measurement.clientId}`);
 
     // Emit Socket.IO event
-    getIO().emit("measurement_deleted", { clientId });
+    getIO().emit("measurement_updated", measurement);
 
-    return { message: "Measurements deleted successfully for client." };
+    return measurement;
   }
+
+  async deleteMeasurement({ id, adminId }) {
+    if (!adminId) {
+      throw new Error("Unauthorized. Admin ID not found.");
+    }
+
+    // Verify measurement exists and belongs to the admin
+    const measurement = await prisma.measurement.findUnique({
+      where: { id },
+      select: { id: true, clientId: true, client: { select: { adminId: true } } },
+    });
+    if (!measurement) {
+      throw new Error("Measurement not found");
+    }
+    if (measurement.client.adminId !== adminId) {
+      throw new Error(
+        "Forbidden: You cannot delete this measurement."
+      );
+    }
+
+    await prisma.measurement.delete({
+      where: { id },
+    });
+
+    // Clear cache
+    await cache.del(`measurements:${measurement.clientId}`);
+
+    // Emit Socket.IO event
+    getIO().emit("measurement_deleted", { id, clientId: measurement.clientId });
+
+    return { message: "Measurement deleted successfully." };
+  }
+
+
 }
 
 module.exports = new MeasurementService();
