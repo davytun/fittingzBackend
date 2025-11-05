@@ -6,11 +6,13 @@ const projectRoutes = require("../routes/projectRoutes");
 const orderRoutes = require("../routes/orderRoutes");
 const eventRoutes = require("../routes/eventRoutes");
 const paymentRoutes = require("../routes/paymentRoutes");
+const profileRoutes = require("../routes/profileRoutes");
 const { generalApiLimiter } = require("../middlewares/rateLimitMiddleware");
 
 module.exports = (app) => {
   app.use("/api/auth", authRoutes);
   // Apply general API rate limiter to all other API routes
+  app.use("/api/profile", generalApiLimiter, profileRoutes);
   app.use("/api/clients", generalApiLimiter, clientRoutes);
   app.use("/api/clients", generalApiLimiter, measurementRoutes);
   app.use("/api/styles", generalApiLimiter, styleImageRoutes);

@@ -40,11 +40,15 @@ const storage = new CloudinaryStorage({
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const filename = file.originalname.split('.')[0]; // Use original filename without extension
 
+        // Determine folder based on the route or field name
+        const isProfileImage = file.fieldname === 'profileImage';
+        const folder = isProfileImage ? 'profile_images' : 'style_inspirations';
+        const prefix = isProfileImage ? 'profile' : 'style';
+        
         return {
-            folder: 'style_inspirations', // Main folder for all style images
-            public_id: `style_${filename}_${uniqueSuffix}`, // Construct a unique public_id
-            // format: 'jpg', // Optional: force format
-            // transformation: [{ width: 1000, height: 1000, crop: 'limit' }] // Optional: server-side transformations
+            folder: folder,
+            public_id: `${prefix}_${filename}_${uniqueSuffix}`,
+            transformation: isProfileImage ? [{ width: 400, height: 400, crop: 'fill' }] : undefined
         };
     },
 });
