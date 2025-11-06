@@ -2,111 +2,46 @@
  * @swagger
  * components:
  *   schemas:
- *     Admin:
+ *     UnifiedSuccessResponse:
  *       type: object
  *       properties:
- *         id:
- *           type: integer
- *           description: The unique ID of the admin.
- *           example: 1
- *         email:
- *           type: string
- *           format: email
- *           description: The admin's email address.
- *           example: admin@example.com
- *         businessName:
- *           type: string
- *           description: The name of the admin's business.
- *           example: Fashion Hub
- *         contactPhone:
- *           type: string
- *           description: The contact phone number (optional).
- *           example: +1234567890
- *           nullable: true
- *         businessAddress:
- *           type: string
- *           description: The business address (optional).
- *           example: 123 Main St
- *           nullable: true
- *         isEmailVerified:
+ *         success:
  *           type: boolean
- *           description: Whether the admin's email is verified.
  *           example: true
- *     RegisterAdminRequest:
- *       type: object
- *       required:
- *         - email
- *         - password
- *         - businessName
- *       properties:
- *         email:
- *           type: string
- *           format: email
- *           description: The admin's email address.
- *           example: admin@example.com
- *         password:
- *           type: string
- *           description: The admin's password (min 6 characters, must include uppercase, lowercase, number, and special character).
- *           example: Password123!
- *         businessName:
- *           type: string
- *           description: The name of the admin's business.
- *           example: Fashion Hub
- *         contactPhone:
- *           type: string
- *           description: The contact phone number (optional, must match E.164 format if provided).
- *           example: +1234567890
- *         businessAddress:
- *           type: string
- *           description: The business address (optional).
- *           example: 123 Main St
- *     LoginAdminRequest:
- *       type: object
- *       required:
- *         - email
- *         - password
- *       properties:
- *         email:
- *           type: string
- *           format: email
- *           description: The admin's email address.
- *           example: admin@example.com
- *         password:
- *           type: string
- *           description: The admin's password.
- *           example: Password123!
- *     VerifyEmailRequest:
- *       type: object
- *       required:
- *         - email
- *         - verificationCode
- *       properties:
- *         email:
- *           type: string
- *           format: email
- *           description: The admin's email address.
- *           example: admin@example.com
- *         verificationCode:
- *           type: string
- *           description: The 6-digit verification code sent to the admin's email.
- *           example: "123456"
- *     ResendVerificationRequest:
- *       type: object
- *       required:
- *         - email
- *       properties:
- *         email:
- *           type: string
- *           format: email
- *           description: The admin's email address.
- *           example: admin@example.com
- *     ErrorResponse:
- *       type: object
- *       properties:
  *         message:
  *           type: string
- *           description: Error message describing the issue.
- *           example: Invalid credentials (email not found)
+ *           example: Operation successful
+ *         token:
+ *           type: string
+ *           description: JWT access token (15 minutes)
+ *           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *         admin:
+ *           type: object
+ *           properties:
+ *             id:
+ *               type: string
+ *               example: cmg5c2q7y0000tv4cpuk0wqa0
+ *             email:
+ *               type: string
+ *               example: admin@example.com
+ *             businessName:
+ *               type: string
+ *               example: Fashion Hub
+ *             isEmailVerified:
+ *               type: boolean
+ *               example: true
+ *     UnifiedErrorResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         message:
+ *           type: string
+ *           example: Validation failed
+ *         errorType:
+ *           type: string
+ *           example: VALIDATION_ERROR
  *         errors:
  *           type: array
  *           items:
@@ -120,30 +55,6 @@
  *                 type: string
  *               value:
  *                 type: string
- *           description: Validation errors (if any).
- *           example:
- *             - msg: Please enter a valid email address.
- *               param: email
- *               location: body
- *               value: invalid-email
- *         errorType:
- *           type: string
- *           description: Specific error type (if applicable).
- *           example: EMAIL_NOT_VERIFIED
- *           nullable: true
- *     TokenResponse:
- *       type: object
- *       properties:
- *         message:
- *           type: string
- *           description: Success message.
- *           example: Login successful
- *         token:
- *           type: string
- *           description: JWT token for authenticated requests.
- *           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *         admin:
- *           $ref: '#/components/schemas/Admin'
  */
 
 /**
@@ -152,236 +63,175 @@
  *   post:
  *     summary: Register a new admin
  *     tags: [Authentication]
- *     description: Creates a new admin account and sends a verification email with a 6-digit code. Rate-limited to 10 requests per 15 minutes per IP.
+ *     description: Creates a new admin account and sends a verification email. Sets HttpOnly refresh token cookie.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/RegisterAdminRequest'
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - businessName
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *               businessName:
+ *                 type: string
+ *               contactPhone:
+ *                 type: string
+ *               businessAddress:
+ *                 type: string
  *     responses:
  *       201:
- *         description: Admin registered successfully, verification email sent.
+ *         description: Admin registered successfully
+ *         headers:
+ *           Set-Cookie:
+ *             description: HttpOnly refresh token cookie
+ *             schema:
+ *               type: string
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Admin registered successfully. Please check your email to verify your account.
- *                 admin:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 1
- *                     email:
- *                       type: string
- *                       example: admin@example.com
- *                     businessName:
- *                       type: string
- *                       example: Fashion Hub
+ *               $ref: '#/components/schemas/UnifiedSuccessResponse'
  *       400:
- *         description: Validation errors or email already exists.
+ *         description: Validation errors
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       429:
- *         description: Too many registration attempts.
+ *               $ref: '#/components/schemas/UnifiedErrorResponse'
+ *       409:
+ *         description: Email already exists
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Too many registration attempts from this IP, please try again after 15 minutes.
- *       500:
- *         description: Server error or failed to send verification email.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *               $ref: '#/components/schemas/UnifiedErrorResponse'
  */
 
 /**
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Log in an admin
+ *     summary: Login admin
  *     tags: [Authentication]
- *     description: Authenticates an admin and returns a JWT token if the email is verified. Rate-limited to 10 requests per 15 minutes per IP.
+ *     description: Authenticates admin and returns access token. Sets HttpOnly refresh token cookie.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/LoginAdminRequest'
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
  *     responses:
  *       200:
- *         description: Login successful, returns JWT token and minimal admin details.
+ *         description: Login successful
+ *         headers:
+ *           Set-Cookie:
+ *             description: HttpOnly refresh token cookie
+ *             schema:
+ *               type: string
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Login successful
- *                 token:
- *                   type: string
- *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *                 admin:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                       example: 1
- *                     email:
- *                       type: string
- *                       example: admin@example.com
- *                     businessName:
- *                       type: string
- *                       example: Fashion Hub
- *       400:
- *         description: Validation errors.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *               $ref: '#/components/schemas/UnifiedSuccessResponse'
  *       401:
- *         description: Invalid credentials (email or password incorrect).
+ *         description: Invalid credentials
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *               $ref: '#/components/schemas/UnifiedErrorResponse'
  *       403:
- *         description: Email not verified.
+ *         description: Email not verified
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       429:
- *         description: Too many login attempts.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Too many login attempts from this IP, please try again after 15 minutes.
- *       500:
- *         description: Server error.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *               $ref: '#/components/schemas/UnifiedErrorResponse'
  */
 
 /**
  * @swagger
  * /api/auth/verify-email:
  *   post:
- *     summary: Verify an admin's email
+ *     summary: Verify email with code
  *     tags: [Authentication]
- *     description: Verifies an admin's email using a 6-digit code sent to their email. Returns a JWT token upon successful verification.
+ *     description: Verifies email using 6-digit code. Returns access token and sets refresh cookie.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/VerifyEmailRequest'
+ *             type: object
+ *             required:
+ *               - email
+ *               - verificationCode
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               verificationCode:
+ *                 type: string
+ *                 minLength: 6
+ *                 maxLength: 6
  *     responses:
  *       200:
- *         description: Email verified successfully, returns JWT token and admin details.
+ *         description: Email verified successfully
+ *         headers:
+ *           Set-Cookie:
+ *             description: HttpOnly refresh token cookie
+ *             schema:
+ *               type: string
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/TokenResponse'
- *       400:
- *         description: Validation errors, invalid code, or expired token.
+ *               $ref: '#/components/schemas/UnifiedSuccessResponse'
+ */
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Authentication]
+ *     description: Refreshes access token using HttpOnly refresh cookie. Returns new tokens.
+ *     responses:
+ *       200:
+ *         description: Token refreshed successfully
+ *         headers:
+ *           Set-Cookie:
+ *             description: New HttpOnly refresh token cookie
+ *             schema:
+ *               type: string
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: Admin not found.
+ *               $ref: '#/components/schemas/UnifiedSuccessResponse'
+ *       401:
+ *         description: Invalid or missing refresh token
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Server error.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *               $ref: '#/components/schemas/UnifiedErrorResponse'
  */
 
 /**
  * @swagger
  * /api/auth/resend-verification:
  *   post:
- *     summary: Resend email verification code
+ *     summary: Resend verification email
  *     tags: [Authentication]
- *     description: Resends a new 6-digit verification code to the admin's email. Rate-limited to 5 requests per 15 minutes per IP.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ResendVerificationRequest'
- *     responses:
- *       200:
- *         description: Verification email resent successfully.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: A new verification email has been sent. Please check your inbox.
- *       400:
- *         description: Validation errors or email already verified.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: Admin not found.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       429:
- *         description: Too many resend attempts.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Too many resend attempts from this IP, please try again after 15 minutes.
- *       500:
- *         description: Server error or failed to send email.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-
-/**
- * @swagger
- * /api/auth/forgot-password:
- *   post:
- *     summary: Request password reset
- *     tags: [Authentication]
- *     description: Sends a 6-digit password reset code to the admin's email. Rate-limited to 5 requests per 15 minutes per IP.
  *     requestBody:
  *       required: true
  *       content:
@@ -394,57 +244,54 @@
  *               email:
  *                 type: string
  *                 format: email
- *                 description: The admin's email address.
- *                 example: admin@example.com
  *     responses:
  *       200:
- *         description: Password reset code sent successfully.
+ *         description: Verification email sent
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
- *                   example: Password reset code has been sent to your email. Please check your inbox.
- *       400:
- *         description: Validation errors.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: Email not verified.
+ *                   example: Sent
+ */
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Reset code sent
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
- *                   example: Email not verified. Please verify your email before resetting password.
- *       404:
- *         description: Admin not found.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       429:
- *         description: Too many password reset attempts.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Too many password reset attempts from this IP, please try again after 15 minutes.
- *       500:
- *         description: Server error or failed to send email.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *                   example: Code sent
  */
 
 /**
@@ -453,7 +300,6 @@
  *   post:
  *     summary: Verify password reset code
  *     tags: [Authentication]
- *     description: Verifies the 6-digit password reset code before allowing password reset.
  *     requestBody:
  *       required: true
  *       content:
@@ -467,44 +313,27 @@
  *               email:
  *                 type: string
  *                 format: email
- *                 description: The admin's email address.
- *                 example: admin@example.com
  *               resetCode:
  *                 type: string
- *                 description: The 6-digit reset code sent to the admin's email.
- *                 example: "123456"
+ *                 minLength: 6
+ *                 maxLength: 6
  *     responses:
  *       200:
- *         description: Reset code verified successfully.
+ *         description: Reset code verified
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
- *                   example: Reset code verified successfully. You can now reset your password.
+ *                   example: Verified
  *                 verified:
  *                   type: boolean
  *                   example: true
- *       400:
- *         description: Validation errors or invalid/expired code.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: Admin not found or no active reset code.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Server error.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
 
 /**
@@ -513,7 +342,6 @@
  *   post:
  *     summary: Reset password
  *     tags: [Authentication]
- *     description: Resets the admin's password using the verified reset code.
  *     requestBody:
  *       required: true
  *       content:
@@ -528,43 +356,25 @@
  *               email:
  *                 type: string
  *                 format: email
- *                 description: The admin's email address.
- *                 example: admin@example.com
  *               resetCode:
  *                 type: string
- *                 description: The 6-digit reset code sent to the admin's email.
- *                 example: "123456"
+ *                 minLength: 6
+ *                 maxLength: 6
  *               newPassword:
  *                 type: string
- *                 description: The new password (min 6 characters, must include uppercase, lowercase, number, and special character).
- *                 example: NewPassword123!
+ *                 minLength: 6
  *     responses:
  *       200:
- *         description: Password reset successful.
+ *         description: Password reset successful
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
  *                 message:
  *                   type: string
- *                   example: Password reset successful. You can now log in with your new password.
- *       400:
- *         description: Validation errors, invalid/expired code, or new password same as old.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: Admin not found or no active reset code.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Server error.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *                   example: Password reset
  */

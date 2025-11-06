@@ -1,18 +1,36 @@
 const { validationResult } = require('express-validator');
 const AdminService = require('../services/authService');
+const ApiResponse = require('../utils/response');
 
 class AdminController {
   async registerAdmin(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
       const result = await AdminService.registerAdmin(req.body);
-      res.status(201).json(result);
+      
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refresh', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/api/auth/refresh',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Registered",
+        token: result.token,
+        admin: result.admin
+      });
     } catch (error) {
-      console.error('Error during admin registration:', error);
+      if (error.message.includes('already exists')) {
+        return ApiResponse.error(res, error.message, 409, "DUPLICATE_EMAIL");
+      }
       next(error);
     }
   }
@@ -20,14 +38,13 @@ class AdminController {
   async resendVerificationEmail(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
-      const result = await AdminService.resendVerificationEmail(req.body.email);
-      res.status(200).json(result);
+      await AdminService.resendVerificationEmail(req.body.email);
+      return ApiResponse.success(res, null, "Sent");
     } catch (error) {
-      console.error('Error resending verification email:', error);
       next(error);
     }
   }
@@ -35,14 +52,28 @@ class AdminController {
   async verifyEmail(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
       const result = await AdminService.verifyEmail(req.body);
-      res.status(200).json(result);
+      
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refresh', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/api/auth/refresh',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        token: result.token,
+        admin: result.admin
+      });
     } catch (error) {
-      console.error('Error during email verification:', error);
       next(error);
     }
   }
@@ -50,37 +81,79 @@ class AdminController {
   async loginAdmin(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
       const result = await AdminService.loginAdmin(req.body);
-      res.status(200).json(result);
+      
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refresh', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/api/auth/refresh',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        token: result.token,
+        admin: result.admin
+      });
     } catch (error) {
-      console.error('Error during admin login:', error);
       if (error.message.includes('Email not verified')) {
-        return res.status(403).json({
-          message: error.message,
-          errorType: 'EMAIL_NOT_VERIFIED',
-        });
+        return ApiResponse.error(res, error.message, 403, "EMAIL_NOT_VERIFIED");
       }
-      res.status(401).json({ message: error.message });
+      if (error.message.includes('Invalid credentials')) {
+        return ApiResponse.error(res, "Invalid credentials", 401, "INVALID_CREDENTIALS");
+      }
+      next(error);
+    }
+  }
+
+  async refreshToken(req, res, next) {
+    try {
+      const refreshToken = req.cookies.refresh;
+      if (!refreshToken) {
+        return ApiResponse.error(res, "No refresh token provided", 401, "NO_REFRESH_TOKEN");
+      }
+
+      const result = await AdminService.refreshToken(refreshToken);
+      
+      // Set new refresh token as HttpOnly cookie
+      res.cookie('refresh', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/api/auth/refresh',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Refreshed",
+        token: result.token,
+        admin: result.admin
+      });
+    } catch (error) {
+      return ApiResponse.error(res, "Invalid refresh token", 401, "INVALID_REFRESH_TOKEN");
     }
   }
 
   async forgotPassword(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
-      const result = await AdminService.forgotPassword(req.body.email);
-      res.status(200).json(result);
+      await AdminService.forgotPassword(req.body.email);
+      return ApiResponse.success(res, null, "Code sent");
     } catch (error) {
-      console.error('Error during forgot password:', error);
       if (error.message.includes('Email not verified')) {
-        return res.status(403).json({ message: error.message });
+        return ApiResponse.error(res, error.message, 403, "EMAIL_NOT_VERIFIED");
       }
       next(error);
     }
@@ -89,14 +162,17 @@ class AdminController {
   async verifyResetCode(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
       const result = await AdminService.verifyResetCode(req.body);
-      res.status(200).json(result);
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        verified: result.verified
+      });
     } catch (error) {
-      console.error('Error during reset code verification:', error);
       next(error);
     }
   }
@@ -104,14 +180,13 @@ class AdminController {
   async resetPassword(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
       const result = await AdminService.resetPassword(req.body);
-      res.status(200).json(result);
+      return ApiResponse.success(res, null, "Password reset");
     } catch (error) {
-      console.error('Error during password reset:', error);
       next(error);
     }
   }

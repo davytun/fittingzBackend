@@ -143,4 +143,9 @@ router.post(
   authController.resetPassword
 );
 
+router.post(
+  "/refresh",
+  authController.refreshToken
+);
+
 module.exports = router;

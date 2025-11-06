@@ -2,6 +2,7 @@ const express = require("express");
 const helmet = require("helmet");
 const compression = require("compression");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const passport = require("passport");
 
 module.exports = (app) => {
@@ -46,6 +47,7 @@ module.exports = (app) => {
       };
 
   app.use(cors(corsOptions));
+  app.use(cookieParser());
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
 

@@ -1,13 +1,12 @@
 const { PrismaClient, TokenType } = require("@prisma/client");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { sendEmail } = require("../utils/mailer");
 const ejs = require("ejs");
 const path = require("path");
+const JWTUtils = require("../utils/jwt");
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET;
 
 class AdminService {
   async registerAdmin({
@@ -17,12 +16,6 @@ class AdminService {
     contactPhone,
     businessAddress,
   }) {
-    if (!JWT_SECRET) {
-      throw new Error(
-        "Authentication system not configured (missing JWT_SECRET)."
-      );
-    }
-
     // Check for existing admin
     const existingAdmin = await prisma.admin.findUnique({ where: { email } });
     if (existingAdmin) {
@@ -86,11 +79,19 @@ class AdminService {
       );
     }
 
+    // Generate tokens
+    const tokenPayload = { id: admin.id, email: admin.email, type: "admin" };
+    const accessToken = JWTUtils.signAccessToken(tokenPayload);
+    const refreshToken = JWTUtils.signRefreshToken(tokenPayload);
+
     return {
+      token: accessToken,
+      refreshToken,
       admin: {
         id: admin.id,
         email: admin.email,
         businessName: admin.businessName,
+        isEmailVerified: admin.isEmailVerified,
       },
       message:
         "Admin registered successfully. Please check your email to verify your account.",
@@ -155,12 +156,6 @@ class AdminService {
   }
 
   async verifyEmail({ email, verificationCode }) {
-    if (!JWT_SECRET) {
-      throw new Error(
-        "Authentication system not configured (missing JWT_SECRET)."
-      );
-    }
-
     const admin = await prisma.admin.findUnique({ where: { email } });
     if (!admin) {
       throw new Error("Admin not found with this email.");
@@ -214,13 +209,15 @@ class AdminService {
       where: { id: verificationTokenRecord.id },
     });
 
-    // Generate JWT token
+    // Generate tokens
     const tokenPayload = { id: admin.id, email: admin.email, type: "admin" };
-    const jwtToken = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: "1h" });
+    const accessToken = JWTUtils.signAccessToken(tokenPayload);
+    const refreshToken = JWTUtils.signRefreshToken(tokenPayload);
 
     return {
       message: "Email verified successfully. You are now logged in.",
-      token: jwtToken,
+      token: accessToken,
+      refreshToken,
       admin: {
         id: admin.id,
         email: admin.email,
@@ -231,12 +228,6 @@ class AdminService {
   }
 
   async loginAdmin({ email, password }) {
-    if (!JWT_SECRET) {
-      throw new Error(
-        "Authentication system not configured (missing JWT_SECRET)."
-      );
-    }
-
     const admin = await prisma.admin.findUnique({
       where: { email },
       select: {
@@ -262,19 +253,56 @@ class AdminService {
       );
     }
 
-    // Generate JWT token
+    // Generate tokens
     const tokenPayload = { id: admin.id, email: admin.email, type: "admin" };
-    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: "1h" });
+    const accessToken = JWTUtils.signAccessToken(tokenPayload);
+    const refreshToken = JWTUtils.signRefreshToken(tokenPayload);
 
     return {
       message: "Login successful",
-      token,
+      token: accessToken,
+      refreshToken,
       admin: {
         id: admin.id,
         email: admin.email,
         businessName: admin.businessName,
+        isEmailVerified: admin.isEmailVerified,
       },
     };
+  }
+
+  async refreshToken(refreshToken) {
+    try {
+      const decoded = JWTUtils.verifyRefreshToken(refreshToken);
+      
+      // Get admin data
+      const admin = await prisma.admin.findUnique({
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          email: true,
+          businessName: true,
+          isEmailVerified: true,
+        },
+      });
+
+      if (!admin) {
+        throw new Error("Admin not found");
+      }
+
+      // Generate new tokens
+      const tokenPayload = { id: admin.id, email: admin.email, type: "admin" };
+      const newAccessToken = JWTUtils.signAccessToken(tokenPayload);
+      const newRefreshToken = JWTUtils.signRefreshToken(tokenPayload);
+
+      return {
+        token: newAccessToken,
+        refreshToken: newRefreshToken,
+        admin,
+      };
+    } catch (error) {
+      throw new Error("Invalid refresh token");
+    }
   }
 
   async forgotPassword(email) {
