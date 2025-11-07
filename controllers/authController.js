@@ -29,7 +29,7 @@ class AdminController {
       });
     } catch (error) {
       if (error.message.includes('already exists')) {
-        return ApiResponse.error(res, error.message, 409, "DUPLICATE_EMAIL");
+        return ApiResponse.error(res, "An account with this email already exists", 409, "DUPLICATE_EMAIL");
       }
       next(error);
     }
@@ -103,11 +103,11 @@ class AdminController {
         admin: result.admin
       });
     } catch (error) {
-      if (error.message.includes('Email not verified')) {
-        return ApiResponse.error(res, error.message, 403, "EMAIL_NOT_VERIFIED");
+      if (error.message.includes('verify your email')) {
+        return ApiResponse.error(res, "Please verify your email before logging in", 403, "EMAIL_NOT_VERIFIED");
       }
-      if (error.message.includes('Invalid credentials')) {
-        return ApiResponse.error(res, "Invalid credentials", 401, "INVALID_CREDENTIALS");
+      if (error.message.includes('Invalid email or password')) {
+        return ApiResponse.error(res, "Invalid email or password", 401, "INVALID_CREDENTIALS");
       }
       next(error);
     }
@@ -117,7 +117,7 @@ class AdminController {
     try {
       const refreshToken = req.cookies.refresh;
       if (!refreshToken) {
-        return ApiResponse.error(res, "No refresh token provided", 401, "NO_REFRESH_TOKEN");
+        return ApiResponse.error(res, "Please log in to continue", 401, "NO_REFRESH_TOKEN");
       }
 
       const result = await AdminService.refreshToken(refreshToken);
@@ -138,7 +138,7 @@ class AdminController {
         admin: result.admin
       });
     } catch (error) {
-      return ApiResponse.error(res, "Invalid refresh token", 401, "INVALID_REFRESH_TOKEN");
+      return ApiResponse.error(res, "Session expired. Please log in again.", 401, "INVALID_REFRESH_TOKEN");
     }
   }
 
@@ -152,8 +152,8 @@ class AdminController {
       await AdminService.forgotPassword(req.body.email);
       return ApiResponse.success(res, null, "Code sent");
     } catch (error) {
-      if (error.message.includes('Email not verified')) {
-        return ApiResponse.error(res, error.message, 403, "EMAIL_NOT_VERIFIED");
+      if (error.message.includes('verify your email')) {
+        return ApiResponse.error(res, "Please verify your email before resetting your password", 403, "EMAIL_NOT_VERIFIED");
       }
       next(error);
     }

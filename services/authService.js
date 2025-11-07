@@ -19,7 +19,7 @@ class AdminService {
     // Check for existing admin
     const existingAdmin = await prisma.admin.findUnique({ where: { email } });
     if (existingAdmin) {
-      throw new Error("Admin with this email already exists");
+      throw new Error("An account with this email already exists");
     }
 
     // Hash password
@@ -75,7 +75,7 @@ class AdminService {
     } catch (emailError) {
       console.error("Failed to send verification email:", emailError);
       throw new Error(
-        "Failed to send verification email. Please try resending it."
+        "We couldn't send your verification email. Please try again."
       );
     }
 
@@ -101,11 +101,11 @@ class AdminService {
   async resendVerificationEmail(email) {
     const admin = await prisma.admin.findUnique({ where: { email } });
     if (!admin) {
-      throw new Error("Admin not found with this email.");
+      throw new Error("No account found with this email address");
     }
 
     if (admin.isEmailVerified) {
-      throw new Error("Email is already verified.");
+      throw new Error("Your email is already verified");
     }
 
     // Invalidate existing tokens
@@ -145,7 +145,7 @@ class AdminService {
     } catch (emailError) {
       console.error("Failed to resend verification email:", emailError);
       throw new Error(
-        "Failed to resend verification email. Please try again later."
+        "We couldn't send your verification email. Please try again."
       );
     }
 
@@ -158,11 +158,11 @@ class AdminService {
   async verifyEmail({ email, verificationCode }) {
     const admin = await prisma.admin.findUnique({ where: { email } });
     if (!admin) {
-      throw new Error("Admin not found with this email.");
+      throw new Error("No account found with this email address");
     }
 
     if (admin.isEmailVerified) {
-      throw new Error("Email is already verified.");
+      throw new Error("Your email is already verified");
     }
 
     const verificationTokenRecord = await prisma.verificationToken.findFirst({
@@ -175,7 +175,7 @@ class AdminService {
 
     if (!verificationTokenRecord) {
       throw new Error(
-        "No active verification token found. Please request a new one."
+        "No verification code found. Please request a new one."
       );
     }
 
@@ -186,7 +186,7 @@ class AdminService {
         where: { id: verificationTokenRecord.id },
       });
       throw new Error(
-        "Your verification code has expired. Please request a new one."
+        "Your verification code has expired. Please get a new one."
       );
     }
 
@@ -195,7 +195,7 @@ class AdminService {
       verificationTokenRecord.token
     );
     if (!isCodeMatch) {
-      throw new Error("The verification code is incorrect. Please try again.");
+      throw new Error("Invalid verification code. Please check and try again.");
     }
 
     // Update admin verification status
@@ -239,17 +239,17 @@ class AdminService {
       },
     });
     if (!admin) {
-      throw new Error("Invalid credentials (email not found)");
+      throw new Error("Invalid email or password");
     }
 
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
-      throw new Error("Invalid credentials (password incorrect)");
+      throw new Error("Invalid email or password");
     }
 
     if (!admin.isEmailVerified) {
       throw new Error(
-        "Email not verified. Please verify your email before logging in."
+        "Please verify your email before logging in"
       );
     }
 
@@ -287,7 +287,7 @@ class AdminService {
       });
 
       if (!admin) {
-        throw new Error("Admin not found");
+        throw new Error("Account not found");
       }
 
       // Generate new tokens
@@ -301,7 +301,7 @@ class AdminService {
         admin,
       };
     } catch (error) {
-      throw new Error("Invalid refresh token");
+      throw new Error("Session expired. Please log in again.");
     }
   }
 
@@ -313,7 +313,7 @@ class AdminService {
 
     if (!admin.isEmailVerified) {
       throw new Error(
-        "Email not verified. Please verify your email before resetting password."
+        "Please verify your email before resetting your password"
       );
     }
 
@@ -353,13 +353,13 @@ class AdminService {
     } catch (emailError) {
       console.error("Failed to send password reset email:", emailError);
       throw new Error(
-        "Failed to send password reset email. Please try again later."
+        "We couldn't send your reset code. Please try again."
       );
     }
 
     return {
       message:
-        "Password reset code has been sent to your email. Please check your inbox.",
+        "Reset code sent to your email. Please check your inbox.",
     };
   }
 
@@ -379,7 +379,7 @@ class AdminService {
 
     if (!resetTokenRecord) {
       throw new Error(
-        "No active reset code found. Please request a new password reset."
+        "No reset code found. Please request a new password reset."
       );
     }
 
@@ -389,7 +389,7 @@ class AdminService {
         where: { id: resetTokenRecord.id },
       });
       throw new Error(
-        "Your reset code has expired. Please request a new password reset."
+        "Your reset code has expired. Please request a new one."
       );
     }
 
@@ -398,11 +398,11 @@ class AdminService {
       resetTokenRecord.token
     );
     if (!isCodeMatch) {
-      throw new Error("The reset code is incorrect. Please try again.");
+      throw new Error("Invalid reset code. Please check and try again.");
     }
 
     return {
-      message: "Reset code verified successfully. You can now reset your password.",
+      message: "Reset code verified. You can now set your new password.",
       verified: true,
     };
   }
@@ -423,7 +423,7 @@ class AdminService {
 
     if (!resetTokenRecord) {
       throw new Error(
-        "No active reset code found. Please request a new password reset."
+        "No reset code found. Please request a new password reset."
       );
     }
 
@@ -433,7 +433,7 @@ class AdminService {
         where: { id: resetTokenRecord.id },
       });
       throw new Error(
-        "Your reset code has expired. Please request a new password reset."
+        "Your reset code has expired. Please request a new one."
       );
     }
 
@@ -442,14 +442,14 @@ class AdminService {
       resetTokenRecord.token
     );
     if (!isCodeMatch) {
-      throw new Error("The reset code is incorrect. Please try again.");
+      throw new Error("Invalid reset code. Please check and try again.");
     }
 
     // Check if new password is same as old password
     const isSamePassword = await bcrypt.compare(newPassword, admin.password);
     if (isSamePassword) {
       throw new Error(
-        "New password must be different from your current password."
+        "Please choose a different password from your current one"
       );
     }
 
@@ -484,7 +484,7 @@ class AdminService {
 
     return {
       message:
-        "Password reset successful. You can now log in with your new password.",
+        "Password updated successfully. You can now log in.",
     };
   }
 }
