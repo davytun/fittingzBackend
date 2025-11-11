@@ -22,6 +22,11 @@ const validateClientIdInParam = [
 
 // Validation for measurement fields
 const validateMeasurementFields = [
+  body("name")
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage("Measurement name is required."),
   body("fields")
     .isObject()
     .withMessage("Measurement fields must be a JSON object.")

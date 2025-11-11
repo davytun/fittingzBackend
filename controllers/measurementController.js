@@ -10,9 +10,9 @@ class MeasurementController {
 
     try {
       const { clientId } = req.params;
-      const { orderId, fields, isDefault } = req.body;
+      const { name, orderId, fields, isDefault } = req.body;
       const adminId = req.user.id;
-      const measurement = await MeasurementService.addMeasurement({ clientId, orderId, fields, isDefault, adminId });
+      const measurement = await MeasurementService.addMeasurement({ clientId, name, orderId, fields, isDefault, adminId });
       res.status(201).json(measurement);
     } catch (error) {
       if (error.message === 'Client not found' || error.message === 'Order not found') {
@@ -50,9 +50,9 @@ class MeasurementController {
 
     try {
       const { id } = req.params;
-      const { fields, isDefault } = req.body;
+      const { name, fields, isDefault } = req.body;
       const adminId = req.user.id;
-      const measurement = await MeasurementService.updateMeasurement({ id, fields, isDefault, adminId });
+      const measurement = await MeasurementService.updateMeasurement({ id, name, fields, isDefault, adminId });
       res.status(200).json(measurement);
     } catch (error) {
       if (error.message === 'Measurement not found') {

@@ -5,7 +5,7 @@ const { getIO } = require("../socket");
 const prisma = new PrismaClient();
 
 class MeasurementService {
-  async addMeasurement({ clientId, orderId, fields, isDefault = false, adminId }) {
+  async addMeasurement({ clientId, name, orderId, fields, isDefault = false, adminId }) {
     if (!adminId) {
       throw new Error("Unauthorized. Admin ID not found.");
     }
@@ -58,12 +58,14 @@ class MeasurementService {
     const measurement = await prisma.measurement.create({
       data: {
         clientId,
+        name,
         orderId,
         fields: fields || {},
         isDefault: shouldBeDefault,
       },
       select: {
         id: true,
+        name: true,
         clientId: true,
         orderId: true,
         fields: true,
@@ -114,6 +116,7 @@ class MeasurementService {
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
       select: {
         id: true,
+        name: true,
         clientId: true,
         orderId: true,
         fields: true,
@@ -131,7 +134,7 @@ class MeasurementService {
     return measurements;
   }
 
-  async updateMeasurement({ id, fields, isDefault, adminId }) {
+  async updateMeasurement({ id, name, fields, isDefault, adminId }) {
     if (!adminId) {
       throw new Error("Unauthorized. Admin ID not found.");
     }
@@ -161,11 +164,13 @@ class MeasurementService {
     const measurement = await prisma.measurement.update({
       where: { id },
       data: {
+        name: name !== undefined ? name : undefined,
         fields: fields !== undefined ? fields : undefined,
         isDefault: isDefault !== undefined ? isDefault : undefined,
       },
       select: {
         id: true,
+        name: true,
         clientId: true,
         orderId: true,
         fields: true,
