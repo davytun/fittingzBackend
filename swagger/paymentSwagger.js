@@ -46,7 +46,7 @@
 
 /**
  * @swagger
- * /api/orders/{orderId}/payments:
+ * /api/v1/orders/{orderId}/payments:
  *   post:
  *     summary: Add a payment to an order
  *     tags: [Payments]
@@ -127,7 +127,7 @@
 
 /**
  * @swagger
- * /api/orders/{orderId}/payments:
+ * /api/v1/orders/{orderId}/payments:
  *   get:
  *     summary: Get all payments for an order
  *     tags: [Payments]
@@ -164,7 +164,7 @@
 
 /**
  * @swagger
- * /api/payments/{paymentId}:
+ * /api/v1/payments/{paymentId}:
  *   delete:
  *     summary: Delete a payment
  *     tags: [Payments]

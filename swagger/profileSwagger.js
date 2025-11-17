@@ -70,7 +70,7 @@
 
 /**
  * @swagger
- * /api/profile:
+ * /api/v1/profile:
  *   get:
  *     summary: Get admin profile
  *     tags: [Profile]

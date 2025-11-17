@@ -70,7 +70,7 @@
 
 /**
  * @swagger
- * /api/clients/{clientId}/measurements:
+ * /api/v1/clients/{clientId}/measurements:
  *   post:
  *     summary: Add measurement for client
  *     tags: [Measurements]
@@ -131,7 +131,7 @@
 
 /**
  * @swagger
- * /api/clients/measurements/{id}:
+ * /api/v1/clients/measurements/{id}:
  *   put:
  *     summary: Update measurement
  *     tags: [Measurements]

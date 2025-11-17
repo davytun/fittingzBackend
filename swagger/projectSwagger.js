@@ -74,7 +74,7 @@
 
 /**
  * @swagger
- * /api/projects/client/{clientId}:
+ * /api/v1/projects/client/{clientId}:
  *   post:
  *     summary: Create a new project for a specific client
  *     tags: [Projects]
@@ -157,7 +157,7 @@
 
 /**
  * @swagger
- * /api/projects:
+ * /api/v1/projects:
  *   get:
  *     summary: Get all projects for the authenticated admin
  *     tags: [Projects]
@@ -196,7 +196,7 @@
 
 /**
  * @swagger
- * /api/projects/client/{clientId}:
+ * /api/v1/projects/client/{clientId}:
  *   get:
  *     summary: Get all projects for a specific client
  *     tags: [Projects]
@@ -245,7 +245,7 @@
 
 /**
  * @swagger
- * /api/projects/{projectId}:
+ * /api/v1/projects/{projectId}:
  *   get:
  *     summary: Get a project by ID
  *     tags: [Projects]
@@ -275,7 +275,7 @@
 
 /**
  * @swagger
- * /api/projects/{projectId}:
+ * /api/v1/projects/{projectId}:
  *   put:
  *     summary: Update a project by ID
  *     tags: [Projects]
@@ -347,7 +347,7 @@
 
 /**
  * @swagger
- * /api/projects/{projectId}:
+ * /api/v1/projects/{projectId}:
  *   delete:
  *     summary: Delete a project by ID
  *     tags: [Projects]

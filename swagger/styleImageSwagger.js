@@ -58,7 +58,7 @@
 
 /**
  * @swagger
- * /api/styles/client/{clientId}/upload:
+ * /api/v1/styles/client/{clientId}/upload:
  *   post:
  *     summary: Upload style images for a client
  *     tags: [StyleImages]
@@ -124,7 +124,7 @@
 
 /**
  * @swagger
- * /api/styles/admin/upload:
+ * /api/v1/styles/admin/upload:
  *   post:
  *     summary: Upload style images for the admin
  *     tags: [StyleImages]
@@ -179,7 +179,7 @@
 
 /**
  * @swagger
- * /api/styles/client/{clientId}:
+ * /api/v1/styles/client/{clientId}:
  *   get:
  *     summary: Get style images for a specific client
  *     tags: [StyleImages]
@@ -228,7 +228,7 @@
 
 /**
  * @swagger
- * /api/styles/admin:
+ * /api/v1/styles/admin:
  *   get:
  *     summary: Get all style images for the authenticated admin
  *     tags: [StyleImages]
@@ -267,7 +267,7 @@
 
 /**
  * @swagger
- * /api/styles/{imageId}:
+ * /api/v1/styles/{imageId}:
  *   delete:
  *     summary: Delete a style image by ID
  *     tags: [StyleImages]
@@ -300,7 +300,7 @@
 
 /**
  * @swagger
- * /api/styles/count:
+ * /api/v1/styles/count:
  *   get:
  *     summary: Get total count of style images
  *     tags: [StyleImages]
@@ -322,7 +322,7 @@
 
 /**
  * @swagger
- * /api/styles/{imageId}:
+ * /api/v1/styles/{imageId}:
  *   patch:
  *     summary: Update a style image
  *     tags: [StyleImages]
@@ -364,7 +364,7 @@
 
 /**
  * @swagger
- * /api/styles/delete-multiple:
+ * /api/v1/styles/delete-multiple:
  *   post:
  *     summary: Delete multiple style images
  *     tags: [StyleImages]

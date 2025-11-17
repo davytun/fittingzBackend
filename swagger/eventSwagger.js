@@ -75,7 +75,7 @@
 
 /**
  * @swagger
- * /api/events:
+ * /api/v1/events:
  *   post:
  *     summary: Create a new event
  *     tags: [Events]
@@ -134,7 +134,7 @@
 
 /**
  * @swagger
- * /api/events:
+ * /api/v1/events:
  *   get:
  *     summary: Get all events for the authenticated admin
  *     tags: [Events]
@@ -158,7 +158,7 @@
 
 /**
  * @swagger
- * /api/events/{id}:
+ * /api/v1/events/{id}:
  *   get:
  *     summary: Get an event by ID
  *     tags: [Events]
@@ -188,7 +188,7 @@
 
 /**
  * @swagger
- * /api/events/{id}/orders:
+ * /api/v1/events/{id}/orders:
  *   get:
  *     summary: Get all orders for a specific event
  *     tags: [Events]
@@ -235,7 +235,7 @@
 
 /**
  * @swagger
- * /api/events/{id}:
+ * /api/v1/events/{id}:
  *   put:
  *     summary: Update an event by ID
  *     tags: [Events]
@@ -303,7 +303,7 @@
 
 /**
  * @swagger
- * /api/events/{id}:
+ * /api/v1/events/{id}:
  *   delete:
  *     summary: Delete an event by ID
  *     tags: [Events]

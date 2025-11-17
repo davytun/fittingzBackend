@@ -59,7 +59,7 @@
 
 /**
  * @swagger
- * /api/auth/register:
+ * /api/v1/auth/register:
  *   post:
  *     summary: Register a new admin
  *     tags: [Authentication]
@@ -115,7 +115,7 @@
 
 /**
  * @swagger
- * /api/auth/login:
+ * /api/v1/auth/login:
  *   post:
  *     summary: Login admin
  *     tags: [Authentication]
@@ -163,7 +163,7 @@
 
 /**
  * @swagger
- * /api/auth/verify-email:
+ * /api/v1/auth/verify-email:
  *   post:
  *     summary: Verify email with code
  *     tags: [Authentication]
@@ -201,7 +201,7 @@
 
 /**
  * @swagger
- * /api/auth/refresh:
+ * /api/v1/auth/refresh:
  *   post:
  *     summary: Refresh access token
  *     tags: [Authentication]
@@ -228,7 +228,7 @@
 
 /**
  * @swagger
- * /api/auth/resend-verification:
+ * /api/v1/auth/resend-verification:
  *   post:
  *     summary: Resend verification email
  *     tags: [Authentication]
@@ -262,7 +262,7 @@
 
 /**
  * @swagger
- * /api/auth/forgot-password:
+ * /api/v1/auth/forgot-password:
  *   post:
  *     summary: Request password reset
  *     tags: [Authentication]
@@ -296,7 +296,7 @@
 
 /**
  * @swagger
- * /api/auth/verify-reset-code:
+ * /api/v1/auth/verify-reset-code:
  *   post:
  *     summary: Verify password reset code
  *     tags: [Authentication]
@@ -338,7 +338,7 @@
 
 /**
  * @swagger
- * /api/auth/reset-password:
+ * /api/v1/auth/reset-password:
  *   post:
  *     summary: Reset password
  *     tags: [Authentication]

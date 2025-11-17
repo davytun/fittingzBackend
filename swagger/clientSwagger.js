@@ -269,7 +269,7 @@
 
 /**
  * @swagger
- * /api/clients:
+ * /api/v1/clients:
  *   post:
  *     summary: Create a new client
  *     tags: [Clients]
@@ -369,7 +369,7 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *
- * /api/clients/{id}:
+ * /api/v1/clients/{id}:
  *   get:
  *     summary: Get a client by ID
  *     tags: [Clients]
@@ -551,7 +551,7 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *
- * /api/clients/{clientId}/measurements:
+ * /api/v1/clients/{clientId}/measurements:
  *   post:
  *     summary: Add measurements for a client
  *     tags: [Measurements]
@@ -677,7 +677,7 @@
  *               $ref: '#/components/schemas/ErrorResponse'
  *
  *
- * /api/clients/measurements/{id}:
+ * /api/v1/clients/measurements/{id}:
  *   put:
  *     summary: Update a measurement by ID
  *     tags: [Measurements]

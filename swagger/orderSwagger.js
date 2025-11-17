@@ -144,7 +144,7 @@
 
 /**
  * @swagger
- * /api/orders/client/{clientId}:
+ * /api/v1/orders/client/{clientId}:
  *   post:
  *     summary: Create a new order for a client
  *     tags: [Orders]
@@ -225,7 +225,7 @@
  *         description: Forbidden
  *       404:
  *         description: Client not found
- * /api/orders/event/{eventId}/client/{clientId}:
+ * /api/v1/orders/event/{eventId}/client/{clientId}:
  *   post:
  *     summary: Create a new order for an event and client
  *     tags: [Orders]
@@ -263,7 +263,7 @@
  *         description: Forbidden
  *       404:
  *         description: Event or client not found
- * /api/orders:
+ * /api/v1/orders:
  *   get:
  *     summary: Get all orders for the authenticated admin
  *     tags: [Orders]
@@ -304,7 +304,7 @@
  *                     totalPages:
  *                       type: integer
  
- * /api/orders/{orderId}:
+ * /api/v1/orders/{orderId}:
  *   get:
  *     summary: Get a single order by ID
  *     tags: [Orders]
@@ -378,7 +378,7 @@
  *         description: Forbidden
  *       404:
  *         description: Order not found
- * /api/orders/{orderId}/status:
+ * /api/v1/orders/{orderId}/status:
  *   patch:
  *     summary: Update order status
  *     tags: [Orders]
