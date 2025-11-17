@@ -6,10 +6,6 @@ const cookieParser = require("cookie-parser");
 const passport = require("passport");
 
 module.exports = (app) => {
-  // Security & performance middlewares
-  app.use(helmet());
-  app.use(compression({ level: 1 }));
-
   // Load allowed origins from env
   const allowedOrigin =
     process.env.CORS_ALLOWED_ORIGIN || "http://localhost:8080";
@@ -46,7 +42,12 @@ module.exports = (app) => {
         },
       };
 
+  // CORS must come before Helmet
   app.use(cors(corsOptions));
+  
+  // Security & performance middlewares
+  app.use(helmet({ crossOriginResourcePolicy: false }));
+  app.use(compression({ level: 1 }));
   app.use(cookieParser());
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
