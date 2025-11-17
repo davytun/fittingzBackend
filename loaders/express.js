@@ -65,26 +65,9 @@ module.exports = (app) => {
   });
   app.use(passport.initialize());
 
-  // Debug CORS configuration
-  console.log(`[CORS] NODE_ENV: ${process.env.NODE_ENV}`);
-  console.log(`[CORS] OPEN_CORS: ${process.env.OPEN_CORS}`);
+  // Optional: log active CORS mode
   console.log(`[CORS] Allowed origins: ${allowedOrigins.join(", ")}`);
   console.log(`[CORS] Open mode: ${isDevOrTesting ? "ENABLED" : "STRICT"}`);
-  console.log(`[CORS] Final corsOptions:`, JSON.stringify(corsOptions, null, 2));
-  
-  // Add debug endpoint
-  app.get('/debug-cors', (req, res) => {
-    res.json({
-      NODE_ENV: process.env.NODE_ENV,
-      OPEN_CORS: process.env.OPEN_CORS,
-      allowedOrigins,
-      isDevOrTesting,
-      corsOptions: {
-        ...corsOptions,
-        origin: typeof corsOptions.origin === 'function' ? 'function' : corsOptions.origin
-      }
-    });
-  });
 
   return app;
 };

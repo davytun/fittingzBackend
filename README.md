@@ -21,6 +21,7 @@ This is the backend API for the Fashion Designer Web Application. It provides a 
 *   [Authentication Features](#authentication-features)
 *   [Project Structure](#project-structure)
 *   [Configuration](#configuration)
+*   [GitHub](#github)
 *   [Contributing](#contributing)
 *   [License](#license)
 
@@ -81,7 +82,7 @@ The server will start on the port specified in your `.env` file (defaulting to 5
 
 ## API Documentation
 
-The API is documented using Swagger. Once the server is running, you can access the interactive API documentation at `http://localhost:5000/api-docs` (or your configured base URL).
+The API is documented using Swagger. Once the server is running, you can access the interactive API documentation at `http://localhost:5000/api/v1/docs` (or your configured base URL).
 
 ## Authentication Features
 
@@ -103,13 +104,13 @@ For detailed documentation on the forgot password feature, see:
 *   **[Forgot Password Summary](FORGOT_PASSWORD_SUMMARY.md)** - Quick reference
 
 ### Authentication Endpoints
-*   `POST /api/auth/register` - Register new admin
-*   `POST /api/auth/login` - Admin login
-*   `POST /api/auth/verify-email` - Verify email with code
-*   `POST /api/auth/resend-verification` - Resend verification code
-*   `POST /api/auth/forgot-password` - Request password reset
-*   `POST /api/auth/verify-reset-code` - Verify reset code
-*   `POST /api/auth/reset-password` - Reset password
+*   `POST /api/v1/auth/register` - Register new admin
+*   `POST /api/v1/auth/login` - Admin login
+*   `POST /api/v1/auth/verify-email` - Verify email with code
+*   `POST /api/v1/auth/resend-verification` - Resend verification code
+*   `POST /api/v1/auth/forgot-password` - Request password reset
+*   `POST /api/v1/auth/verify-reset-code` - Verify reset code
+*   `POST /api/v1/auth/reset-password` - Reset password
 
 ## Project Structure
 
@@ -134,6 +135,15 @@ The project follows a modular structure to separate concerns:
 ## Configuration
 
 The application is configured through environment variables defined in a `.env` file. See the [Installation](#installation) section for more details.
+
+## GitHub
+
+**Repository:** [https://github.com/davytun/fittingz-backend](https://github.com/davytun/fittingz-backend)
+
+### Quick Links
+*   [Issues](https://github.com/davytun/fittingz-backend/issues) - Report bugs or request features
+*   [Pull Requests](https://github.com/davytun/fittingz-backend/pulls) - View or submit code contributions
+*   [Releases](https://github.com/davytun/fittingz-backend/releases) - View version history and changelogs
 
 ## Contributing
 
