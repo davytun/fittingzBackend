@@ -6,7 +6,8 @@ class AdminController {
   async registerAdmin(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
+      const firstError = errors.array()[0];
+      return ApiResponse.error(res, firstError.msg, 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
@@ -38,7 +39,8 @@ class AdminController {
   async resendVerificationEmail(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
+      const firstError = errors.array()[0];
+      return ApiResponse.error(res, firstError.msg, 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
@@ -52,7 +54,8 @@ class AdminController {
   async verifyEmail(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
+      const firstError = errors.array()[0];
+      return ApiResponse.error(res, firstError.msg, 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
@@ -96,7 +99,8 @@ class AdminController {
   async loginAdmin(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
+      const firstError = errors.array()[0];
+      return ApiResponse.error(res, firstError.msg, 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
@@ -160,7 +164,8 @@ class AdminController {
   async forgotPassword(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
+      const firstError = errors.array()[0];
+      return ApiResponse.error(res, firstError.msg, 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
@@ -180,7 +185,8 @@ class AdminController {
   async verifyResetCode(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
+      const firstError = errors.array()[0];
+      return ApiResponse.error(res, firstError.msg, 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
@@ -198,7 +204,8 @@ class AdminController {
   async resetPassword(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return ApiResponse.error(res, "Validation failed", 400, "VALIDATION_ERROR", errors.array());
+      const firstError = errors.array()[0];
+      return ApiResponse.error(res, firstError.msg, 400, "VALIDATION_ERROR", errors.array());
     }
 
     try {
