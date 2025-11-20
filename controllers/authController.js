@@ -74,6 +74,21 @@ class AdminController {
         admin: result.admin
       });
     } catch (error) {
+      if (error.message.includes('No account found')) {
+        return ApiResponse.error(res, "No account found with this email address", 404, "ACCOUNT_NOT_FOUND");
+      }
+      if (error.message.includes('already verified')) {
+        return ApiResponse.error(res, "Your email is already verified", 400, "ALREADY_VERIFIED");
+      }
+      if (error.message.includes('No verification code found')) {
+        return ApiResponse.error(res, "No verification code found. Please request a new one.", 400, "NO_CODE_FOUND");
+      }
+      if (error.message.includes('expired')) {
+        return ApiResponse.error(res, "Your verification code has expired. Please get a new one.", 400, "CODE_EXPIRED");
+      }
+      if (error.message.includes('Invalid verification code')) {
+        return ApiResponse.error(res, "Invalid verification code. Please check and try again.", 400, "INVALID_CODE");
+      }
       next(error);
     }
   }
