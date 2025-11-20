@@ -29,8 +29,16 @@ const validateRegisterInput = [
     .withMessage("Business name is required."),
   body("contactPhone")
     .optional({ checkFalsy: true })
-    .matches(/^(\+?\d{1,15}|0\d{10,14})$/)
-    .withMessage("Invalid phone number format."),
+    .custom((value) => {
+      if (!value) return true; // Optional field
+      if (!/^\+?\d+$/.test(value)) {
+        throw new Error('Phone number can only contain numbers and an optional + sign');
+      }
+      if (value.length > 15) {
+        throw new Error('Phone number is too long. Maximum 15 digits allowed');
+      }
+      return true;
+    }),
   body("businessAddress")
     .optional({ checkFalsy: true })
     .isString()
