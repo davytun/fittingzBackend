@@ -10,16 +10,30 @@ const profileRoutes = require("../routes/profileRoutes");
 const { generalApiLimiter } = require("../middlewares/rateLimitMiddleware");
 
 module.exports = (app) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
   app.use("/api/v1/auth", authRoutes);
-  // Apply general API rate limiter to all other API routes
-  app.use("/api/v1/profile", generalApiLimiter, profileRoutes);
-  app.use("/api/v1/clients", generalApiLimiter, clientRoutes);
-  app.use("/api/v1/clients", generalApiLimiter, measurementRoutes);
-  app.use("/api/v1/styles", generalApiLimiter, styleImageRoutes);
-  app.use("/api/v1/projects", generalApiLimiter, projectRoutes);
-  app.use("/api/v1/orders", generalApiLimiter, orderRoutes);
-  app.use("/api/v1/events", generalApiLimiter, eventRoutes);
-  app.use("/api/v1/", generalApiLimiter, paymentRoutes);
+  
+  if (isProduction) {
+    app.use("/api/v1/profile", generalApiLimiter, profileRoutes);
+    app.use("/api/v1/clients", generalApiLimiter, clientRoutes);
+    app.use("/api/v1/clients", generalApiLimiter, measurementRoutes);
+    app.use("/api/v1/styles", generalApiLimiter, styleImageRoutes);
+    app.use("/api/v1/projects", generalApiLimiter, projectRoutes);
+    app.use("/api/v1/orders", generalApiLimiter, orderRoutes);
+    app.use("/api/v1/events", generalApiLimiter, eventRoutes);
+    app.use("/api/v1/", generalApiLimiter, paymentRoutes);
+  } else {
+    app.use("/api/v1/profile", profileRoutes);
+    app.use("/api/v1/clients", clientRoutes);
+    app.use("/api/v1/clients", measurementRoutes);
+    app.use("/api/v1/styles", styleImageRoutes);
+    app.use("/api/v1/projects", projectRoutes);
+    app.use("/api/v1/orders", orderRoutes);
+    app.use("/api/v1/events", eventRoutes);
+    app.use("/api/v1/", paymentRoutes);
+  }
+  
   app.use("/test", require("../routes/health"));
 
   return app;
