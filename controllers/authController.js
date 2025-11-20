@@ -167,6 +167,9 @@ class AdminController {
       await AdminService.forgotPassword(req.body.email);
       return ApiResponse.success(res, null, "Code sent");
     } catch (error) {
+      if (error.message.includes('No account found')) {
+        return ApiResponse.error(res, "No account found with this email address", 404, "ACCOUNT_NOT_FOUND");
+      }
       if (error.message.includes('verify your email')) {
         return ApiResponse.error(res, "Please verify your email before resetting your password", 403, "EMAIL_NOT_VERIFIED");
       }
