@@ -17,12 +17,21 @@ const validateRegisterInput = [
   body("password")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long.")
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/
-    )
-    .withMessage(
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character."
-    ),
+    .custom((value) => {
+      if (!/(?=.*[a-z])/.test(value)) {
+        throw new Error('Password must contain at least one lowercase letter');
+      }
+      if (!/(?=.*[A-Z])/.test(value)) {
+        throw new Error('Password must contain at least one uppercase letter');
+      }
+      if (!/(?=.*\d)/.test(value)) {
+        throw new Error('Password must contain at least one number');
+      }
+      if (!/(?=.*[^a-zA-Z0-9])/.test(value)) {
+        throw new Error('Password must contain at least one special character');
+      }
+      return true;
+    }),
   body("businessName")
     .trim()
     .notEmpty()
@@ -126,12 +135,21 @@ const validateResetPasswordInput = [
   body("newPassword")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long.")
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/
-    )
-    .withMessage(
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character."
-    ),
+    .custom((value) => {
+      if (!/(?=.*[a-z])/.test(value)) {
+        throw new Error('Password must contain at least one lowercase letter');
+      }
+      if (!/(?=.*[A-Z])/.test(value)) {
+        throw new Error('Password must contain at least one uppercase letter');
+      }
+      if (!/(?=.*\d)/.test(value)) {
+        throw new Error('Password must contain at least one number');
+      }
+      if (!/(?=.*[^a-zA-Z0-9])/.test(value)) {
+        throw new Error('Password must contain at least one special character');
+      }
+      return true;
+    }),
 ];
 
 router.post(
