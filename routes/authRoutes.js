@@ -53,8 +53,8 @@ const validateVerifyEmailInput = [
     .normalizeEmail(),
   body("verificationCode")
     .isString()
-    .isLength({ min: 6, max: 6 })
-    .withMessage("Verification code must be 6 characters long."),
+    .isLength({ min: 4, max: 4 })
+    .withMessage("Verification code must be 4 characters long."),
 ];
 
 const validateResendVerificationEmailInput = [
@@ -102,8 +102,8 @@ const validateVerifyResetCodeInput = [
     .normalizeEmail(),
   body("resetCode")
     .isString()
-    .isLength({ min: 6, max: 6 })
-    .withMessage("Reset code must be 6 characters long."),
+    .isLength({ min: 4, max: 4 })
+    .withMessage("Reset code must be 4 characters long."),
 ];
 
 const validateResetPasswordInput = [
@@ -113,8 +113,8 @@ const validateResetPasswordInput = [
     .normalizeEmail(),
   body("resetCode")
     .isString()
-    .isLength({ min: 6, max: 6 })
-    .withMessage("Reset code must be 6 characters long."),
+    .isLength({ min: 4, max: 4 })
+    .withMessage("Reset code must be 4 characters long."),
   body("newPassword")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long.")
