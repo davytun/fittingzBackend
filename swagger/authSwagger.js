@@ -167,7 +167,7 @@
  *   post:
  *     summary: Verify email with code
  *     tags: [Authentication]
- *     description: Verifies email using 6-digit code. Returns access token and sets refresh cookie.
+ *     description: Verifies email using 4-digit code. Returns access token and sets refresh cookie.
  *     requestBody:
  *       required: true
  *       content:
@@ -183,8 +183,8 @@
  *                 format: email
  *               verificationCode:
  *                 type: string
- *                 minLength: 6
- *                 maxLength: 6
+ *                 minLength: 4
+ *                 maxLength: 4
  *     responses:
  *       200:
  *         description: Email verified successfully
@@ -315,8 +315,8 @@
  *                 format: email
  *               resetCode:
  *                 type: string
- *                 minLength: 6
- *                 maxLength: 6
+ *                 minLength: 4
+ *                 maxLength: 4
  *     responses:
  *       200:
  *         description: Reset code verified
@@ -358,8 +358,8 @@
  *                 format: email
  *               resetCode:
  *                 type: string
- *                 minLength: 6
- *                 maxLength: 6
+ *                 minLength: 4
+ *                 maxLength: 4
  *               newPassword:
  *                 type: string
  *                 minLength: 6

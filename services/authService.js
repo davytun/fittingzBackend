@@ -37,8 +37,8 @@ class AdminService {
       },
     });
 
-    // Generate email verification token (6-digit code)
-    const verificationCode = crypto.randomInt(100000, 999999).toString();
+    // Generate email verification token (4-digit code)
+    const verificationCode = crypto.randomInt(1000, 9999).toString();
     const hashedVerificationCode = await bcrypt.hash(verificationCode, 10);
     const tokenExpiresIn = 15 * 60 * 1000; // 15 minutes
 
@@ -117,7 +117,7 @@ class AdminService {
     });
 
     // Generate new verification token
-    const verificationCode = crypto.randomInt(100000, 999999).toString();
+    const verificationCode = crypto.randomInt(1000, 9999).toString();
     const hashedVerificationCode = await bcrypt.hash(verificationCode, 10);
     const tokenExpiresIn = 15 * 60 * 1000; // 15 minutes
 
@@ -325,8 +325,8 @@ class AdminService {
       },
     });
 
-    // Generate 6-digit reset code
-    const resetCode = crypto.randomInt(100000, 999999).toString();
+    // Generate 4-digit reset code
+    const resetCode = crypto.randomInt(1000, 9999).toString();
     const hashedResetCode = await bcrypt.hash(resetCode, 10);
     const tokenExpiresIn = 15 * 60 * 1000; // 15 minutes
 
