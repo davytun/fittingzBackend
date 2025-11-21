@@ -56,35 +56,24 @@ exports.addPayment = async (req, res, next) => {
     const payment = await prisma.payment.create({
       data: {
         orderId,
-        amount: parseFloat(amount.toFixed(2)),
+        amount: parseFloat(Number(amount).toFixed(2)),
         notes: notes || null,
       },
     });
 
-    // Update order status if fully paid
-    let updatedOrder = order;
-    if (newTotal >= Number(order.price)) {
-      updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: { status: "PROCESSING" },
-        include: {
-          client: { select: { name: true } },
-          project: { select: { name: true } },
-          event: { select: { name: true } },
-          payments: true,
-        },
-      });
-    } else {
-      updatedOrder = await prisma.order.findUnique({
-        where: { id: orderId },
-        include: {
-          client: { select: { name: true } },
-          project: { select: { name: true } },
-          event: { select: { name: true } },
-          payments: true,
-        },
-      });
-    }
+    // Get updated order with all payments
+    const updatedOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        client: { select: { name: true } },
+        project: { select: { name: true } },
+        event: { select: { name: true } },
+        payments: true,
+      },
+    });
+
+    // Calculate actual total from all payments
+    const actualTotal = updatedOrder.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
 
     // Clear cache
     await cache.delPattern(`orders:admin:${adminId}:*`);
@@ -95,9 +84,9 @@ exports.addPayment = async (req, res, next) => {
       payment,
       order: updatedOrder,
       paymentSummary: {
-        totalPaid: newTotal,
-        remainingBalance: Number(order.price) - newTotal,
-        isFullyPaid: newTotal >= Number(order.price),
+        totalPaid: actualTotal,
+        remainingBalance: Number(order.price) - actualTotal,
+        isFullyPaid: actualTotal >= Number(order.price),
       },
     });
 

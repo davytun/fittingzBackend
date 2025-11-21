@@ -51,6 +51,14 @@
  *             type: string
  *           description: Optional array of style image IDs.
  *           example: ["cmg5c2q7y0000tv4cpuk0wqa4"]
+ *         note:
+ *           type: string
+ *           description: Optional note for the order.
+ *           example: "Rush order for wedding"
+ *         measurementId:
+ *           type: string
+ *           description: Optional measurement ID to link to the order.
+ *           example: "cmg5c2q7y0000tv4cpuk0wqa5"
  *     Order:
  *       type: object
  *       properties:
@@ -83,6 +91,15 @@
  *         styleDescription:
  *           type: string
  *           example: Elegant evening gown
+ *         note:
+ *           type: string
+ *           example: Rush order for wedding
+ *         totalPaid:
+ *           type: number
+ *           example: 5000
+ *         outstandingBalance:
+ *           type: number
+ *           example: 20000
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -144,7 +161,7 @@
 
 /**
  * @swagger
- * /api/v1/orders/client/{clientId}:
+ * /api/v1/clients/{clientId}/orders:
  *   post:
  *     summary: Create a new order for a client
  *     tags: [Orders]
@@ -225,7 +242,7 @@
  *         description: Forbidden
  *       404:
  *         description: Client not found
- * /api/v1/orders/event/{eventId}/client/{clientId}:
+ * /api/v1/clients/{clientId}/orders/event/{eventId}:
  *   post:
  *     summary: Create a new order for an event and client
  *     tags: [Orders]
@@ -233,17 +250,17 @@
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: eventId
- *         required: true
- *         schema:
- *           type: string
- *         description: The event ID
- *       - in: path
  *         name: clientId
  *         required: true
  *         schema:
  *           type: string
  *         description: The client ID
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The event ID
  *     requestBody:
  *       required: true
  *       content:
@@ -263,7 +280,7 @@
  *         description: Forbidden
  *       404:
  *         description: Event or client not found
- * /api/v1/orders:
+ * /api/v1/clients/admin/orders:
  *   get:
  *     summary: Get all orders for the authenticated admin
  *     tags: [Orders]
@@ -303,14 +320,19 @@
  *                       type: integer
  *                     totalPages:
  *                       type: integer
- 
- * /api/v1/orders/{orderId}:
+ * /api/v1/clients/{clientId}/orders/{orderId}:
  *   get:
  *     summary: Get a single order by ID
  *     tags: [Orders]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The client ID
  *       - in: path
  *         name: orderId
  *         required: true
@@ -334,6 +356,12 @@
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The client ID
  *       - in: path
  *         name: orderId
  *         required: true
@@ -366,6 +394,12 @@
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The client ID
+ *       - in: path
  *         name: orderId
  *         required: true
  *         schema:
@@ -378,13 +412,19 @@
  *         description: Forbidden
  *       404:
  *         description: Order not found
- * /api/v1/orders/{orderId}/status:
+ * /api/v1/clients/{clientId}/orders/{orderId}/status:
  *   patch:
  *     summary: Update order status
  *     tags: [Orders]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The client ID
  *       - in: path
  *         name: orderId
  *         required: true
@@ -417,5 +457,4 @@
  *         description: Forbidden
  *       404:
  *         description: Order not found
- 
  */

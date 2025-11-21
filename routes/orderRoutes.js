@@ -43,15 +43,7 @@ const validateOrderFields = [
   body("details")
     .optional()
     .isObject()
-    .withMessage("Details must be a JSON object.")
-    .custom((value) => {
-      try {
-        JSON.stringify(value);
-      } catch (e) {
-        throw new Error("Details must be a valid JSON object.");
-      }
-      return true;
-    }),
+    .withMessage("Details must be a JSON object."),
   body("price")
     .isFloat({ min: -9999999.99, max: 9999999.99 })
     .withMessage(
@@ -60,7 +52,7 @@ const validateOrderFields = [
   body("currency")
     .optional()
     .isString()
-    .isIn(["NGN", "USD", "EUR"]) // Add supported currencies
+    .isIn(["NGN", "USD", "EUR"])
     .withMessage("Invalid currency. Must be one of: NGN, USD, EUR."),
   body("dueDate")
     .optional()
@@ -112,7 +104,18 @@ const validateOrderFields = [
       }
       return true;
     }),
+  body("note").optional().isString().withMessage("Note must be a string."),
+  body("measurementId")
+    .optional()
+    .isString()
+    .isLength({ min: 25, max: 30 })
+    .withMessage(
+      "Invalid measurement ID format. Must be a valid CUID (25–30 characters)."
+    ),
 ];
+
+// Validation for order updates - more lenient
+const validateOrderUpdateFields = [];
 
 // Validation for order status update
 const validateOrderStatus = [
@@ -140,9 +143,17 @@ const validatePagination = [
 // All routes are protected
 router.use(authenticateJwt);
 
-// Routes
+// Admin route to get all orders - must be before other routes
+router.get(
+  "/admin/orders",
+  generalApiLimiter,
+  validatePagination,
+  OrderController.getAllOrdersForAdmin
+);
+
+// Routes - nested under /client/:clientId/orders
 router.post(
-  "/client/:clientId",
+  "/:clientId/orders",
   createOrderLimiter,
   validateIds,
   validateOrderFields,
@@ -150,7 +161,7 @@ router.post(
 );
 
 router.post(
-  "/event/:eventId/client/:clientId",
+  "/:clientId/orders/event/:eventId",
   createOrderLimiter,
   validateIds,
   validateOrderFields,
@@ -158,14 +169,7 @@ router.post(
 );
 
 router.get(
-  "/",
-  generalApiLimiter,
-  validatePagination,
-  OrderController.getAllOrdersForAdmin
-);
-
-router.get(
-  "/client/:clientId",
+  "/:clientId/orders",
   generalApiLimiter,
   validateIds,
   validatePagination,
@@ -173,14 +177,14 @@ router.get(
 );
 
 router.get(
-  "/:orderId",
+  "/:clientId/orders/:orderId",
   generalApiLimiter,
   validateIds,
   OrderController.getOrderById
 );
 
 router.patch(
-  "/:orderId/status",
+  "/:clientId/orders/:orderId/status",
   generalApiLimiter,
   validateIds,
   validateOrderStatus,
@@ -188,15 +192,15 @@ router.patch(
 );
 
 router.patch(
-  "/:orderId",
+  "/:clientId/orders/:orderId",
   generalApiLimiter,
   validateIds,
-  validateOrderFields,
+  validateOrderUpdateFields,
   OrderController.updateOrderDetails
 );
 
 router.delete(
-  "/:orderId",
+  "/:clientId/orders/:orderId",
   generalApiLimiter,
   validateIds,
   OrderController.deleteOrder

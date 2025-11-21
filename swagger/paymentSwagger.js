@@ -46,13 +46,19 @@
 
 /**
  * @swagger
- * /api/v1/orders/{orderId}/payments:
+ * /api/v1/clients/{clientId}/orders/{orderId}/payments:
  *   post:
  *     summary: Add a payment to an order
  *     tags: [Payments]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the client
  *       - in: path
  *         name: orderId
  *         required: true
@@ -127,13 +133,19 @@
 
 /**
  * @swagger
- * /api/v1/orders/{orderId}/payments:
+ * /api/v1/clients/{clientId}/orders/{orderId}/payments:
  *   get:
  *     summary: Get all payments for an order
  *     tags: [Payments]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the client
  *       - in: path
  *         name: orderId
  *         required: true
@@ -164,13 +176,25 @@
 
 /**
  * @swagger
- * /api/v1/payments/{paymentId}:
+ * /api/v1/clients/{clientId}/orders/{orderId}/payments/{paymentId}:
  *   delete:
  *     summary: Delete a payment
  *     tags: [Payments]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the client
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the order
  *       - in: path
  *         name: paymentId
  *         required: true

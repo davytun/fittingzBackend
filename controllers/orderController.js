@@ -36,11 +36,12 @@ const parseOrderDate = (dateString) => {
 
 // Generate unique order number
 const generateOrderNumber = async (adminId) => {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000)
-    .toString()
-    .padStart(3, "0");
-  const orderNumber = `ORD-${timestamp}-${random}`;
+  const date = new Date();
+  const year = date.getFullYear().toString().slice(-2);
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  const random = Math.floor(Math.random() * 999) + 1;
+  const orderNumber = `ORD${year}${month}${day}${random}`;
 
   const existingOrder = await prisma.order.findFirst({
     where: { orderNumber, adminId },
@@ -230,14 +231,6 @@ exports.createOrderForClient = async (req, res, next) => {
     return res.status(400).json({
       message: "Validation errors",
       errors: errors.array(),
-      example: {
-        details: { fabric: "cotton", color: "blue" },
-        price: 25000,
-        currency: "NGN",
-        dueDate: "2025-07-20",
-        status: "PENDING_PAYMENT",
-        projectId: "optional-project-id",
-      },
     });
   }
 
@@ -253,6 +246,8 @@ exports.createOrderForClient = async (req, res, next) => {
     deposit,
     styleDescription,
     styleImageIds,
+    note,
+    measurementId,
   } = req.body;
   const adminId = req.user.id;
 
@@ -305,7 +300,7 @@ exports.createOrderForClient = async (req, res, next) => {
     // Verify client exists and belongs to the admin
     const client = await prisma.client.findUnique({
       where: { id: clientId },
-      select: { id: true, adminId: true },
+      select: { id: true, adminId: true, name: true },
     });
 
     if (!client) {
@@ -319,6 +314,27 @@ exports.createOrderForClient = async (req, res, next) => {
         message: "Forbidden",
         details: "You do not have access to this client",
       });
+    }
+
+    // Verify measurement if provided
+    if (measurementId) {
+      const measurement = await prisma.measurement.findUnique({
+        where: { id: measurementId },
+        select: { id: true, clientId: true },
+      });
+
+      if (!measurement) {
+        return res.status(404).json({
+          message: "Measurement not found",
+          measurementId,
+        });
+      }
+      if (measurement.clientId !== clientId) {
+        return res.status(403).json({
+          message: "Forbidden",
+          details: "Measurement does not belong to this client",
+        });
+      }
     }
 
     // Verify project if provided
@@ -387,12 +403,19 @@ exports.createOrderForClient = async (req, res, next) => {
         eventId: eventId || null,
         deposit: deposit ? parseFloat(deposit.toFixed(2)) : null,
         styleDescription: styleDescription || null,
+        note: note || null,
       },
       include: {
         client: { select: { name: true } },
         project: { select: { name: true } },
         event: { select: { name: true } },
         payments: true,
+        measurements: true,
+        styleImages: {
+          include: {
+            styleImage: true,
+          },
+        },
       },
     });
 
@@ -407,6 +430,14 @@ exports.createOrderForClient = async (req, res, next) => {
       });
     }
 
+    // Link measurement if provided
+    if (measurementId) {
+      await prisma.measurement.update({
+        where: { id: measurementId },
+        data: { orderId: order.id },
+      });
+    }
+
     // Link style images if provided
     if (styleImageIds && styleImageIds.length > 0) {
       await prisma.orderStyleImage.createMany({
@@ -417,13 +448,21 @@ exports.createOrderForClient = async (req, res, next) => {
       });
     }
 
+    // Calculate outstanding balance
+    const totalPaid = order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    const outstandingBalance = Number(order.price) - totalPaid;
+
     // Clear cache
     await cache.delPattern(`orders:admin:${adminId}:*`);
     await cache.delPattern(`orders:client:${clientId}:*`);
 
     res.status(201).json({
       message: "Order created successfully",
-      order,
+      order: {
+        ...order,
+        outstandingBalance,
+        totalPaid,
+      },
     });
     getIO().emit("order_created", order);
   } catch (error) {
@@ -544,8 +583,19 @@ exports.getOrdersByClientId = async (req, res, next) => {
       where: { clientId, adminId },
     });
 
+    // Calculate outstanding balance for each order
+    const ordersWithBalance = orders.map(order => {
+      const totalPaid = order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+      const outstandingBalance = Number(order.price) - totalPaid;
+      return {
+        ...order,
+        totalPaid,
+        outstandingBalance,
+      };
+    });
+
     const result = {
-      data: orders,
+      data: ordersWithBalance,
       pagination: {
         page,
         pageSize,

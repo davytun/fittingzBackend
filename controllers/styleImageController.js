@@ -21,8 +21,25 @@ exports.uploadStyleImage = async (req, res, next) => {
   }
 
   const { clientId } = req.params;
-  const { category, description } = req.body;
+  const { category, description } = req.body || {};
   const adminId = req.user.id;
+
+  console.log('Upload request:', {
+    files: req.files,
+    body: req.body,
+    headers: req.headers['content-type']
+  });
+
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ 
+      message: "No image files uploaded.",
+      debug: {
+        files: req.files,
+        hasFiles: !!req.files,
+        filesLength: req.files ? req.files.length : 0
+      }
+    });
+  }
 
   try {
     const styleImages = await StyleImageService.uploadStyleImageForClient({
@@ -74,7 +91,7 @@ exports.uploadStyleImageForAdmin = async (req, res, next) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { category, description } = req.body;
+  const { category, description } = req.body || {};
   const adminId = req.user.id;
 
   try {
@@ -207,7 +224,7 @@ exports.updateStyleImage = async (req, res, next) => {
 };
 
 exports.deleteMultipleStyleImages = async (req, res, next) => {
-  const { imageIds } = req.body;
+  const { imageIds } = req.body || {};
   const adminId = req.user.id;
 
   try {

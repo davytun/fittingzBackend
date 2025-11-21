@@ -58,7 +58,7 @@
 
 /**
  * @swagger
- * /api/v1/styles/client/{clientId}/upload:
+ * /api/v1/clients/{clientId}/styles/upload:
  *   post:
  *     summary: Upload style images for a client
  *     tags: [StyleImages]
@@ -77,15 +77,13 @@
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required:
- *               - images
  *             properties:
  *               images:
  *                 type: array
  *                 items:
  *                   type: string
  *                   format: binary
- *                 description: The image files to upload
+ *                 description: The image files to upload (any field name accepted)
  *               category:
  *                 type: string
  *                 description: Optional category for the images
@@ -124,7 +122,7 @@
 
 /**
  * @swagger
- * /api/v1/styles/admin/upload:
+ * /api/v1/admin/styles/upload:
  *   post:
  *     summary: Upload style images for the admin
  *     tags: [StyleImages]
@@ -136,15 +134,13 @@
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required:
- *               - images
  *             properties:
  *               images:
  *                 type: array
  *                 items:
  *                   type: string
  *                   format: binary
- *                 description: The image files to upload
+ *                 description: The image files to upload (any field name accepted)
  *               category:
  *                 type: string
  *                 description: Optional category for the images
@@ -179,7 +175,7 @@
 
 /**
  * @swagger
- * /api/v1/styles/client/{clientId}:
+ * /api/v1/clients/{clientId}/styles:
  *   get:
  *     summary: Get style images for a specific client
  *     tags: [StyleImages]
@@ -228,7 +224,7 @@
 
 /**
  * @swagger
- * /api/v1/styles/admin:
+ * /api/v1/admin/styles:
  *   get:
  *     summary: Get all style images for the authenticated admin
  *     tags: [StyleImages]
@@ -267,7 +263,7 @@
 
 /**
  * @swagger
- * /api/v1/styles/{imageId}:
+ * /api/v1/admin/styles/{imageId}:
  *   delete:
  *     summary: Delete a style image by ID
  *     tags: [StyleImages]
@@ -300,7 +296,7 @@
 
 /**
  * @swagger
- * /api/v1/styles/count:
+ * /api/v1/admin/styles/count:
  *   get:
  *     summary: Get total count of style images
  *     tags: [StyleImages]
@@ -322,7 +318,7 @@
 
 /**
  * @swagger
- * /api/v1/styles/{imageId}:
+ * /api/v1/admin/styles/{imageId}:
  *   patch:
  *     summary: Update a style image
  *     tags: [StyleImages]
@@ -364,7 +360,7 @@
 
 /**
  * @swagger
- * /api/v1/styles/delete-multiple:
+ * /api/v1/admin/styles/delete-multiple:
  *   post:
  *     summary: Delete multiple style images
  *     tags: [StyleImages]

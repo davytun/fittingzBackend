@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Add payment to order
 router.post(
-  "/orders/:orderId/payments",
+  "/:clientId/orders/:orderId/payments",
   authenticateJwt,
   body("amount").isFloat({ min: 0.01 }).withMessage("Amount must be a positive number"),
   body("notes").optional().isString().withMessage("Notes must be a string"),
@@ -16,14 +16,14 @@ router.post(
 
 // Get payments for order
 router.get(
-  "/orders/:orderId/payments",
+  "/:clientId/orders/:orderId/payments",
   authenticateJwt,
   paymentController.getOrderPayments
 );
 
 // Delete payment
 router.delete(
-  "/payments/:paymentId",
+  "/:clientId/orders/:orderId/payments/:paymentId",
   authenticateJwt,
   paymentController.deletePayment
 );

@@ -18,20 +18,20 @@ module.exports = (app) => {
     app.use("/api/v1/profile", generalApiLimiter, profileRoutes);
     app.use("/api/v1/clients", generalApiLimiter, clientRoutes);
     app.use("/api/v1/clients", generalApiLimiter, measurementRoutes);
-    app.use("/api/v1/styles", generalApiLimiter, styleImageRoutes);
+    app.use("/api/v1/clients", generalApiLimiter, orderRoutes);
+    app.use("/api/v1/clients", generalApiLimiter, styleImageRoutes);
     app.use("/api/v1/projects", generalApiLimiter, projectRoutes);
-    app.use("/api/v1/orders", generalApiLimiter, orderRoutes);
     app.use("/api/v1/events", generalApiLimiter, eventRoutes);
-    app.use("/api/v1/", generalApiLimiter, paymentRoutes);
+    app.use("/api/v1/clients", generalApiLimiter, paymentRoutes);
   } else {
     app.use("/api/v1/profile", profileRoutes);
     app.use("/api/v1/clients", clientRoutes);
     app.use("/api/v1/clients", measurementRoutes);
-    app.use("/api/v1/styles", styleImageRoutes);
+    app.use("/api/v1/clients", orderRoutes);
+    app.use("/api/v1/clients", styleImageRoutes);
     app.use("/api/v1/projects", projectRoutes);
-    app.use("/api/v1/orders", orderRoutes);
     app.use("/api/v1/events", eventRoutes);
-    app.use("/api/v1/", paymentRoutes);
+    app.use("/api/v1/clients", paymentRoutes);
   }
   
   app.use("/test", require("../routes/health"));

@@ -40,51 +40,45 @@ const validateStyleImageInput = [
     .withMessage("Description must be a string if provided."),
 ];
 
-// Get all style images uploaded by the admin
-router.get("/admin", styleImageController.getStyleImagesByAdmin);
-
-// Upload a style image for the admin
+// Admin routes
+router.get("/admin/styles", styleImageController.getStyleImagesByAdmin);
 router.post(
-  "/admin/upload",
+  "/admin/styles/upload",
   upload.array("images"),
   validateStyleImageInput,
   styleImageController.uploadStyleImageForAdmin
 );
+router.get("/admin/styles/count", styleImageController.getStyleImagesCount);
+router.post("/admin/styles/delete-multiple", styleImageController.deleteMultipleStyleImages);
 
-// Upload a style image for a client
+// Client nested routes
 router.post(
-  "/client/:clientId/upload",
+  "/:clientId/styles/upload",
   validateClientIdInParam,
   upload.array("images"),
   validateStyleImageInput,
   styleImageController.uploadStyleImage
 );
 
-// Get all style images for a client
 router.get(
-  "/client/:clientId",
+  "/:clientId/styles",
   validateClientIdInParam,
   styleImageController.getStyleImagesByClientId
 );
 
-router.get("/count", styleImageController.getStyleImagesCount);
-
-// Update a style image by its ID
 router.patch(
-  "/:imageId",
+  "/:clientId/styles/:imageId",
+  validateClientIdInParam,
   validateImageIdInParam,
   validateStyleImageInput,
   styleImageController.updateStyleImage
 );
 
-// Delete a style image by its ID
 router.delete(
-  "/:imageId",
+  "/:clientId/styles/:imageId",
+  validateClientIdInParam,
   validateImageIdInParam,
   styleImageController.deleteStyleImage
 );
-
-// Delete multiple style images by their IDs
-router.post("/delete-multiple", styleImageController.deleteMultipleStyleImages);
 
 module.exports = router;
