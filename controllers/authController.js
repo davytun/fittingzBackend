@@ -215,6 +215,25 @@ class AdminController {
       next(error);
     }
   }
+
+  async logout(req, res, next) {
+    try {
+      // Clear the refresh token cookie
+      res.clearCookie('refresh', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/api/auth/refresh'
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Logged out successfully"
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new AdminController();
