@@ -66,6 +66,13 @@ router.get(
   styleImageController.getStyleImagesByClientId
 );
 
+router.get(
+  "/:clientId/styles/:imageId",
+  validateClientIdInParam,
+  validateImageIdInParam,
+  styleImageController.getStyleImageById
+);
+
 router.patch(
   "/:clientId/styles/:imageId",
   validateClientIdInParam,

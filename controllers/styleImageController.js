@@ -144,6 +144,31 @@ exports.getStyleImagesByClientId = async (req, res, next) => {
   }
 };
 
+exports.getStyleImageById = async (req, res, next) => {
+  const { clientId, imageId } = req.params;
+  const adminId = req.user.id;
+
+  try {
+    const result = await StyleImageService.getStyleImageById({
+      clientId,
+      imageId,
+      adminId,
+    });
+    res.status(200).json(result);
+  } catch (error) {
+    if (error.message === "Style image not found") {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.message === "Client not found") {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.message.includes("Forbidden")) {
+      return res.status(403).json({ message: error.message });
+    }
+    next(error);
+  }
+};
+
 exports.getStyleImagesByAdmin = async (req, res, next) => {
   const adminId = req.user.id;
   const page = parseInt(req.query.page, 10) || 1;

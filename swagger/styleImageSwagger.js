@@ -224,6 +224,42 @@
 
 /**
  * @swagger
+ * /api/v1/clients/{clientId}/styles/{imageId}:
+ *   get:
+ *     summary: Get a single style image by ID for a client
+ *     tags: [StyleImages]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the client
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the style image
+ *     responses:
+ *       200:
+ *         description: Style image details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/StyleImage'
+ *       403:
+ *         description: Forbidden - Client does not belong to the user
+ *       404:
+ *         description: Client or style image not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
  * /api/v1/admin/styles:
  *   get:
  *     summary: Get all style images for the authenticated admin
@@ -263,13 +299,19 @@
 
 /**
  * @swagger
- * /api/v1/admin/styles/{imageId}:
+ * /api/v1/clients/{clientId}/styles/{imageId}:
  *   delete:
  *     summary: Delete a style image by ID
  *     tags: [StyleImages]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the client
  *       - in: path
  *         name: imageId
  *         required: true
@@ -318,13 +360,19 @@
 
 /**
  * @swagger
- * /api/v1/admin/styles/{imageId}:
+ * /api/v1/clients/{clientId}/styles/{imageId}:
  *   patch:
  *     summary: Update a style image
  *     tags: [StyleImages]
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the client
  *       - in: path
  *         name: imageId
  *         required: true

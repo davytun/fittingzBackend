@@ -75,6 +75,32 @@ class StyleImageService {
     return styleImages;
   }
 
+  // Get a single style image by ID for a client
+  static async getStyleImageById({ clientId, imageId, adminId }) {
+    // Verify client
+    const client = await prisma.client.findUnique({ where: { id: clientId } });
+    if (!client) {
+      throw new Error("Client not found");
+    }
+    if (client.adminId !== adminId) {
+      throw new Error("Forbidden: You do not have access to this client's style images");
+    }
+
+    // Fetch style image
+    const styleImage = await prisma.styleImage.findFirst({
+      where: { 
+        id: imageId,
+        clientId: clientId 
+      },
+    });
+
+    if (!styleImage) {
+      throw new Error("Style image not found");
+    }
+
+    return styleImage;
+  }
+
   // Get style images for a specific client
   static async getStyleImagesByClientId({ clientId, adminId, page = 1, pageSize = 10 }) {
     const skip = (page - 1) * pageSize;
