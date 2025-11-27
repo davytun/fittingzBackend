@@ -20,6 +20,7 @@ module.exports = (app) => {
     app.use("/api/v1/clients", generalApiLimiter, measurementRoutes);
     app.use("/api/v1/clients", generalApiLimiter, orderRoutes);
     app.use("/api/v1/clients", generalApiLimiter, styleImageRoutes);
+    app.use("/api/v1", generalApiLimiter, styleImageRoutes);
     app.use("/api/v1/projects", generalApiLimiter, projectRoutes);
     app.use("/api/v1/events", generalApiLimiter, eventRoutes);
     app.use("/api/v1/clients", generalApiLimiter, paymentRoutes);
@@ -29,6 +30,7 @@ module.exports = (app) => {
     app.use("/api/v1/clients", measurementRoutes);
     app.use("/api/v1/clients", orderRoutes);
     app.use("/api/v1/clients", styleImageRoutes);
+    app.use("/api/v1", styleImageRoutes);
     app.use("/api/v1/projects", projectRoutes);
     app.use("/api/v1/events", eventRoutes);
     app.use("/api/v1/clients", paymentRoutes);
