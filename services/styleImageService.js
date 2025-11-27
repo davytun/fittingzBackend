@@ -77,7 +77,7 @@ class StyleImageService {
 
   // Get a single style image by ID for a client
   static async getStyleImageById({ clientId, imageId, adminId }) {
-    // Verify client
+    // Verify client belongs to admin
     const client = await prisma.client.findUnique({ where: { id: clientId } });
     if (!client) {
       throw new Error("Client not found");
@@ -86,11 +86,22 @@ class StyleImageService {
       throw new Error("Forbidden: You do not have access to this client's style images");
     }
 
-    // Fetch style image
+    // Fetch style image with client info
     const styleImage = await prisma.styleImage.findFirst({
       where: { 
         id: imageId,
-        clientId: clientId 
+        OR: [
+          { clientId: clientId },
+          { adminId: adminId, clientId: clientId },
+        ],
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -121,16 +132,24 @@ class StyleImageService {
       throw new Error("Forbidden: You do not have access to this client's style images");
     }
 
-    // Fetch style images
+    // Fetch style images with client info
     const styleImages = await prisma.styleImage.findMany({
-      where: { client: { id: clientId } },
+      where: { clientId: clientId },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
     });
 
     const totalStyleImages = await prisma.styleImage.count({
-      where: { client: { id: clientId } },
+      where: { clientId: clientId },
     });
 
     const result = {
@@ -153,30 +172,35 @@ class StyleImageService {
   static async getStyleImagesByAdmin({ adminId, page = 1, pageSize = 10 }) {
     const skip = (page - 1) * pageSize;
 
-    // Fetch client IDs owned by the admin
-    const clients = await prisma.client.findMany({
-      where: { adminId },
-      select: { id: true },
-    });
-    const clientIds = clients.map((client) => client.id);
-
-    // Build where clause
-    const whereClause = {
-      OR: [
-        { admin: { id: adminId } },
-        { client: { id: { in: clientIds } } },
-      ],
-    };
-
-    // Fetch style images
+    // Fetch style images with client information
     const styleImages = await prisma.styleImage.findMany({
-      where: whereClause,
+      where: {
+        OR: [
+          { adminId: adminId },
+          { client: { adminId: adminId } },
+        ],
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
     });
 
-    const totalStyleImages = await prisma.styleImage.count({ where: whereClause });
+    const totalStyleImages = await prisma.styleImage.count({
+      where: {
+        OR: [
+          { adminId: adminId },
+          { client: { adminId: adminId } },
+        ],
+      },
+    });
 
     return {
       data: styleImages,
