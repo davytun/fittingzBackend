@@ -39,7 +39,7 @@ router.get(
   ProfileController.getProfile
 );
 
-router.put(
+router.patch(
   "/",
   generalApiLimiter,
   upload.single('profileImage'),

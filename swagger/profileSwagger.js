@@ -113,7 +113,7 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *
- *   put:
+ *   patch:
  *     summary: Update admin profile
  *     tags: [Profile]
  *     description: Updates the authenticated admin's profile information. Supports profile image upload. Rate-limited to 100 requests per 15 minutes per IP.
