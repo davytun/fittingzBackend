@@ -7,8 +7,8 @@ module.exports = (app) => {
   // Load core modules
   expressLoader(app);
   passportLoader(app);
+  swaggerLoader(app); // Load Swagger before routes
   routeLoader(app);
-  swaggerLoader(app);
 
-  console.log("✓ Express, Passport, Routes, Swagger, and Cron system loaded");
+  console.log("✓ Express, Passport, Swagger, Routes, and Cron system loaded");
 };
