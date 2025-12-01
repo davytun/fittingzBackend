@@ -213,8 +213,10 @@ exports.deleteStyleImage = async (req, res, next) => {
 };
 
 exports.getStyleImagesCount = async (req, res, next) => {
+  const adminId = req.user.id;
+  
   try {
-    const result = await StyleImageService.getStyleImagesCount();
+    const result = await StyleImageService.getStyleImagesCount({ adminId });
     res.status(200).json(result);
   } catch (error) {
     next(error);

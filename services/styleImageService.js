@@ -251,9 +251,15 @@ class StyleImageService {
     return { message: "Style image deleted successfully" };
   }
 
-  // Get total count of style images
-  static async getStyleImagesCount() {
-    const count = await prisma.styleImage.count();
+  static async getStyleImagesCount({ adminId }) {
+    const count = await prisma.styleImage.count({
+      where: {
+        OR: [
+          { adminId: adminId },
+          { client: { adminId: adminId } },
+        ],
+      },
+    });
     return { count };
   }
 
