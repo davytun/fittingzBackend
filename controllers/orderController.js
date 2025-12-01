@@ -453,7 +453,7 @@ exports.createOrderForClient = async (req, res, next) => {
     const outstandingBalance = Number(order.price) - totalPaid;
 
     // Get measurementId from linked measurement
-    const measurementId = order.measurements.length > 0 ? order.measurements[0].id : null;
+    const linkedMeasurementId = order.measurements.length > 0 ? order.measurements[0].id : null;
 
     // Clear cache
     await cache.delPattern(`orders:admin:${adminId}:*`);
@@ -463,7 +463,7 @@ exports.createOrderForClient = async (req, res, next) => {
       message: "Order created successfully",
       order: {
         ...order,
-        measurementId,
+        measurementId: linkedMeasurementId,
         outstandingBalance,
         totalPaid,
       },
