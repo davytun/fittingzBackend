@@ -403,7 +403,7 @@ exports.createOrderForClient = async (req, res, next) => {
         eventId: eventId || null,
         deposit: deposit ? parseFloat(deposit.toFixed(2)) : null,
         styleDescription: styleDescription || null,
-        note: note || null,
+        note: note !== undefined ? note : null,
       },
       include: {
         client: { select: { name: true } },
