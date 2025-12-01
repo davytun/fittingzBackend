@@ -452,6 +452,9 @@ exports.createOrderForClient = async (req, res, next) => {
     const totalPaid = order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
     const outstandingBalance = Number(order.price) - totalPaid;
 
+    // Get measurementId from linked measurement
+    const measurementId = order.measurements.length > 0 ? order.measurements[0].id : null;
+
     // Clear cache
     await cache.delPattern(`orders:admin:${adminId}:*`);
     await cache.delPattern(`orders:client:${clientId}:*`);
@@ -460,6 +463,7 @@ exports.createOrderForClient = async (req, res, next) => {
       message: "Order created successfully",
       order: {
         ...order,
+        measurementId,
         outstandingBalance,
         totalPaid,
       },
@@ -498,6 +502,7 @@ exports.getAllOrdersForAdmin = async (req, res, next) => {
         client: { select: { name: true, id: true } },
         project: { select: { name: true, id: true } },
         event: { select: { name: true, id: true } },
+        measurements: req.query.include === 'measurement' ? true : { select: { id: true } },
         styleImages: {
           include: {
             styleImage: true,
@@ -514,8 +519,15 @@ exports.getAllOrdersForAdmin = async (req, res, next) => {
       where: { adminId },
     });
 
+    // Add measurementId to each order
+    const ordersWithMeasurementId = orders.map(order => ({
+      ...order,
+      measurementId: order.measurements.length > 0 ? order.measurements[0].id : null,
+      measurement: req.query.include === 'measurement' && order.measurements.length > 0 ? order.measurements[0] : undefined
+    }));
+
     const result = {
-      data: orders,
+      data: ordersWithMeasurementId,
       pagination: {
         page,
         pageSize,
@@ -567,6 +579,7 @@ exports.getOrdersByClientId = async (req, res, next) => {
         client: { select: { name: true, id: true } },
         project: { select: { name: true, id: true } },
         event: { select: { name: true, id: true } },
+        measurements: req.query.include === 'measurement' ? true : { select: { id: true } },
         styleImages: {
           include: {
             styleImage: true,
@@ -583,12 +596,14 @@ exports.getOrdersByClientId = async (req, res, next) => {
       where: { clientId, adminId },
     });
 
-    // Calculate outstanding balance for each order
+    // Calculate outstanding balance and add measurementId for each order
     const ordersWithBalance = orders.map(order => {
       const totalPaid = order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
       const outstandingBalance = Number(order.price) - totalPaid;
       return {
         ...order,
+        measurementId: order.measurements.length > 0 ? order.measurements[0].id : null,
+        measurement: req.query.include === 'measurement' && order.measurements.length > 0 ? order.measurements[0] : undefined,
         totalPaid,
         outstandingBalance,
       };
@@ -625,6 +640,7 @@ exports.getOrderById = async (req, res, next) => {
         client: { select: { name: true, id: true } },
         project: { select: { name: true, id: true } },
         event: { select: { name: true, id: true } },
+        measurements: req.query.include === 'measurement' ? true : { select: { id: true } },
         styleImages: {
           include: {
             styleImage: true,
@@ -642,8 +658,15 @@ exports.getOrderById = async (req, res, next) => {
         .status(403)
         .json({ message: "Forbidden: You do not have access to this order" });
     }
+    // Add measurementId to response
+    const orderWithMeasurementId = {
+      ...order,
+      measurementId: order.measurements.length > 0 ? order.measurements[0].id : null,
+      measurement: req.query.include === 'measurement' && order.measurements.length > 0 ? order.measurements[0] : undefined
+    };
+
     console.log(`getOrderById took ${Date.now() - start} ms`);
-    res.status(200).json(order);
+    res.status(200).json(orderWithMeasurementId);
   } catch (error) {
     next(error);
   }

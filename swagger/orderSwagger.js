@@ -157,6 +157,25 @@
  *                   description:
  *                     type: string
  *                     example: Blue cotton dress
+         measurementId:
+           type: string
+           nullable: true
+           description: ID of the linked measurement
+           example: cmg5c2q7y0000tv4cpuk0wqa6
+         measurement:
+           type: object
+           nullable: true
+           description: Full measurement object (only when ?include=measurement is used)
+           properties:
+             id:
+               type: string
+               example: cmg5c2q7y0000tv4cpuk0wqa6
+             name:
+               type: string
+               example: John's Measurements
+             fields:
+               type: object
+               example: { chest: "40", waist: "32" }
  */
 
 /**
