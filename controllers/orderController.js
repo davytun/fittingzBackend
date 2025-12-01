@@ -452,8 +452,8 @@ exports.createOrderForClient = async (req, res, next) => {
     const totalPaid = order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
     const outstandingBalance = Number(order.price) - totalPaid;
 
-    // Get measurementId from linked measurement
-    const linkedMeasurementId = order.measurements.length > 0 ? order.measurements[0].id : null;
+    // Use the provided measurementId directly
+    const linkedMeasurementId = measurementId || null;
 
     // Clear cache
     await cache.delPattern(`orders:admin:${adminId}:*`);
