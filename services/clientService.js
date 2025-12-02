@@ -112,6 +112,7 @@ class ClientService {
         measurements: {
           select: {
             id: true,
+            name: true,
             fields: true,
             createdAt: true,
             updatedAt: true,
@@ -127,6 +128,19 @@ class ClientService {
             createdAt: true,
             updatedAt: true,
           },
+        },
+        Order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 3,
+        },
+        _count: {
+          select: { measurements: true, styleImages: true },
         },
       },
     });
