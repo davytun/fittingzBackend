@@ -4,7 +4,7 @@ const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Fashion Designer App API",
+      title: "Fittingz App API",
       version: "1.0.0",
       description:
         "API documentation for the Fashion Designer Web Application. This API allows management of clients, measurements, and style inspirations.",

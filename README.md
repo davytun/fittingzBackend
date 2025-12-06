@@ -1,4 +1,4 @@
-# Fashion Designer App API
+# Fittingz App API
 
 This is the backend API for the Fashion Designer Web Application. It provides a robust system for managing clients, orders, measurements, projects, and style inspirations, tailored for fashion designers and tailoring businesses.
 

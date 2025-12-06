@@ -2,7 +2,7 @@
 
 ## ✅ Implementation Complete
 
-A complete, production-grade "Forgot Password" feature has been successfully implemented for the Fashion Designer App backend API.
+A complete, production-grade "Forgot Password" feature has been successfully implemented for the Fittingz App backend API.
 
 ---
 

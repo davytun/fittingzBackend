@@ -63,7 +63,7 @@ class AdminService {
 
     // Render email template
     const emailSubject = "Verify Your Email Address";
-    const emailText = `Welcome to Fashion Designer App! Your email verification code is: ${verificationCode}\nThis code will expire in 15 minutes.`;
+    const emailText = `Welcome to Fittingz App! Your email verification code is: ${verificationCode}\nThis code will expire in 15 minutes.`;
     const emailHtml = await ejs.renderFile(
       path.join(__dirname, "../templates/emails/verify-email.ejs"),
       { businessName, verificationCode }

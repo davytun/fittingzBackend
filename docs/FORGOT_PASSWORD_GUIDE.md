@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the complete, production-grade "Forgot Password" feature implementation for the Fashion Designer App API. The feature follows industry best practices for security, user experience, and error handling.
+This document describes the complete, production-grade "Forgot Password" feature implementation for the Fittingz App API. The feature follows industry best practices for security, user experience, and error handling.
 
 ## Architecture
 

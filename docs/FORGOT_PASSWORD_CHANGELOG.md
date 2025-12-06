@@ -23,7 +23,7 @@ Implemented a complete, production-grade "Forgot Password" feature with email re
    - Professional email template for password reset requests
    - Displays 6-digit reset code prominently
    - Includes expiration warning and security notice
-   - Branded with Fashion Designer App styling
+   - Branded with Fittingz App styling
 
 2. **`templates/emails/password-reset-success.ejs`**
    - Confirmation email after successful password reset
