@@ -425,10 +425,10 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  *
- *   put:
+ *   patch:
  *     summary: Update a client by ID
  *     tags: [Clients]
- *     description: Updates a client by ID, ensuring it belongs to the authenticated admin. Rate-limited to 100 requests per 15 minutes per IP.
+ *     description: Partially updates a client by ID, ensuring it belongs to the authenticated admin. Only provided fields will be updated. Rate-limited to 100 requests per 15 minutes per IP.
  *     security:
  *       - bearerAuth: []
  *     parameters:

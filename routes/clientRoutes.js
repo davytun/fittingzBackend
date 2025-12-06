@@ -131,7 +131,7 @@ router.get(
   validateClientId,
   clientController.getClientById
 );
-router.put(
+router.patch(
   "/:id",
   generalApiLimiter,
   validateClientId,
