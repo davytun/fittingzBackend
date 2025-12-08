@@ -2,6 +2,7 @@ const { PrismaClient, ProjectStatus } = require("@prisma/client");
 const { validationResult } = require("express-validator");
 const { getIO } = require("../socket");
 const cache = require('../utils/cache');
+const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
 
 const prisma = new PrismaClient();
 
@@ -110,6 +111,15 @@ exports.createProjectForClient = async (req, res, next) => {
     // Clear cache
     await cache.delPattern(`projects:admin:${adminId}:*`);
     await cache.delPattern(`projects:client:${clientId}:*`);
+
+    await trackActivity(
+      adminId,
+      ActivityTypes.PROJECT_CREATED,
+      `New project created: ${name}`,
+      `Project "${name}" has been created for ${client.name}`,
+      project.id,
+      'Project'
+    );
 
     res.status(201).json(project);
     getIO().emit("project_created", project);
@@ -282,6 +292,17 @@ exports.updateProject = async (req, res, next) => {
     await cache.delPattern(`projects:admin:${adminId}:*`);
     await cache.delPattern(`projects:client:${updatedProject.clientId}:*`);
     await cache.del(`project:${projectId}`);
+
+    if (status && status !== existingProject.status) {
+      await trackActivity(
+        adminId,
+        ActivityTypes.PROJECT_STATUS_CHANGED,
+        `Project status updated: ${updatedProject.name}`,
+        `Project "${updatedProject.name}" status changed to ${status}`,
+        updatedProject.id,
+        'Project'
+      );
+    }
 
     res.status(200).json(updatedProject);
     getIO().emit("project_updated", updatedProject);

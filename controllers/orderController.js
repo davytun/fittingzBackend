@@ -3,6 +3,7 @@ const { validationResult } = require("express-validator");
 const prisma = new PrismaClient();
 const { getIO } = require("../socket");
 const cache = require("../utils/cache");
+const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
 
 // Enhanced price validation
 const validatePrice = (price) => {
@@ -209,6 +210,15 @@ exports.createOrderForEvent = async (req, res, next) => {
     // Clear cache
     await cache.delPattern(`orders:admin:${adminId}:*`);
     await cache.delPattern(`orders:client:${clientId}:*`);
+
+    await trackActivity(
+      adminId,
+      ActivityTypes.ORDER_CREATED,
+      `New order created: ${order.orderNumber}`,
+      `Order ${order.orderNumber} created for ${order.client.name} (Event: ${order.event.name})`,
+      order.id,
+      'Order'
+    );
 
     res.status(201).json({
       message: "Order created successfully for event",
@@ -458,6 +468,15 @@ exports.createOrderForClient = async (req, res, next) => {
     // Clear cache
     await cache.delPattern(`orders:admin:${adminId}:*`);
     await cache.delPattern(`orders:client:${clientId}:*`);
+
+    await trackActivity(
+      adminId,
+      ActivityTypes.ORDER_CREATED,
+      `New order created: ${order.orderNumber}`,
+      `Order ${order.orderNumber} created for ${order.client.name}`,
+      order.id,
+      'Order'
+    );
 
     res.status(201).json({
       message: "Order created successfully",
@@ -729,6 +748,15 @@ exports.updateOrderStatus = async (req, res, next) => {
     await cache.delPattern(`orders:admin:${adminId}:*`);
     await cache.delPattern(`orders:client:${updatedOrder.clientId}:*`);
     await cache.del(`order:${orderId}`);
+
+    await trackActivity(
+      adminId,
+      ActivityTypes.ORDER_STATUS_CHANGED,
+      `Order status updated: ${updatedOrder.orderNumber}`,
+      `Order ${updatedOrder.orderNumber} status changed to ${status}`,
+      updatedOrder.id,
+      'Order'
+    );
 
     res.status(200).json({
       message: "Order status updated successfully",

@@ -3,6 +3,7 @@ const { validationResult } = require("express-validator");
 const prisma = new PrismaClient();
 const { getIO } = require("../socket");
 const cache = require('../utils/cache');
+const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
 
 // Add payment to an order
 exports.addPayment = async (req, res, next) => {
@@ -78,6 +79,15 @@ exports.addPayment = async (req, res, next) => {
     // Clear cache
     await cache.delPattern(`orders:admin:${adminId}:*`);
     await cache.delPattern(`orders:client:${order.clientId}:*`);
+
+    await trackActivity(
+      adminId,
+      ActivityTypes.PAYMENT_RECEIVED,
+      `Payment received: ${updatedOrder.orderNumber}`,
+      `Payment of ${amount} received for order ${updatedOrder.orderNumber}`,
+      payment.id,
+      'Payment'
+    );
 
     res.status(201).json({
       message: "Payment added successfully",

@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const { validationResult } = require("express-validator");
 const { getIO } = require("../socket");
+const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
 
 const prisma = new PrismaClient();
 
@@ -32,6 +33,15 @@ exports.createEvent = async (req, res, next) => {
         }
       }
     });
+
+    await trackActivity(
+      adminId,
+      ActivityTypes.EVENT_CREATED,
+      `New event created: ${name}`,
+      `Event "${name}" has been created with ${clientIds.length} client(s)`,
+      event.id,
+      'Event'
+    );
 
     res.status(201).json(event);
     getIO().emit("event_created", event);

@@ -1,5 +1,6 @@
 const { validationResult } = require("express-validator");
 const ClientService = require("../services/clientService");
+const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
 
 class ClientController {
   async createClient(req, res, next) {
@@ -18,6 +19,16 @@ class ClientController {
         gender,
         adminId,
       });
+      
+      await trackActivity(
+        adminId,
+        ActivityTypes.CLIENT_CREATED,
+        `New client added: ${name}`,
+        `Client ${name} has been successfully added to your system`,
+        client.id,
+        'Client'
+      );
+      
       res.status(201).json(client);
     } catch (error) {
       if (error.message === "Unauthorized. Admin ID not found.") {

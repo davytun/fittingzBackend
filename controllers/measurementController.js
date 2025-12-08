@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const MeasurementService = require('../services/measurementService');
+const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
 
 class MeasurementController {
   async addMeasurement(req, res, next) {
@@ -13,6 +14,16 @@ class MeasurementController {
       const { name, orderId, fields, isDefault } = req.body;
       const adminId = req.user.id;
       const measurement = await MeasurementService.addMeasurement({ clientId, name, orderId, fields, isDefault, adminId });
+      
+      await trackActivity(
+        adminId,
+        ActivityTypes.MEASUREMENT_ADDED,
+        `New measurement added: ${name || 'Measurement'}`,
+        `Measurement has been added for client`,
+        measurement.id,
+        'Measurement'
+      );
+      
       res.status(201).json(measurement);
     } catch (error) {
       if (error.message === 'Client not found' || error.message === 'Order not found') {

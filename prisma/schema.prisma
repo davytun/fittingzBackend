@@ -25,6 +25,7 @@ model Admin {
   Project            Project[]
   styleImages        StyleImage[]
   verificationTokens VerificationToken[]
+  recentUpdates      RecentUpdate[]
 }
 
 model VerificationToken {
@@ -211,6 +212,22 @@ model Payment {
   @@index([orderId])
 }
 
+model RecentUpdate {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  title       String
+  description String?
+  entityId    String
+  entityType  String
+  adminId     String
+  createdAt   DateTime     @default(now())
+  admin       Admin        @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([createdAt])
+  @@index([type])
+}
+
 enum TokenType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
@@ -232,4 +249,15 @@ enum OrderStatus {
   DELIVERED
   COMPLETED
   CANCELLED
+}
+
+enum ActivityType {
+  CLIENT_CREATED
+  ORDER_CREATED
+  ORDER_STATUS_CHANGED
+  PROJECT_CREATED
+  PROJECT_STATUS_CHANGED
+  PAYMENT_RECEIVED
+  EVENT_CREATED
+  MEASUREMENT_ADDED
 }
