@@ -66,3 +66,67 @@
  *       500:
  *         description: Server error
  */
+
+/**
+ * @swagger
+ * /api/v1/recent-updates/summary:
+ *   get:
+ *     summary: Get activity summary statistics
+ *     tags: [Recent Updates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           default: 7
+ *         description: Number of days to analyze
+ *     responses:
+ *       200:
+ *         description: Activity summary retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalActivities:
+ *                       type: integer
+ *                       description: Total number of activities
+ *                     totalClients:
+ *                       type: integer
+ *                       description: Total number of clients
+ *                     totalOrders:
+ *                       type: integer
+ *                       description: Total number of orders
+ *                     totalGalleryStyles:
+ *                       type: integer
+ *                       description: Total number of gallery style images
+ *                     byType:
+ *                       type: object
+ *                       description: Activity count by type
+ *                     byDay:
+ *                       type: object
+ *                       description: Activity count by day
+ *                     mostActiveDay:
+ *                       type: object
+ *                       properties:
+ *                         date:
+ *                           type: string
+ *                         count:
+ *                           type: integer
+ *                     averagePerDay:
+ *                       type: number
+ *                       description: Average activities per day
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
