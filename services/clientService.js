@@ -68,7 +68,7 @@ class ClientService {
         createdAt: true,
         updatedAt: true,
         _count: {
-          select: { measurements: true, styleImages: true },
+          select: { measurements: true, styleImages: true, Order: true },
         },
       },
     });
