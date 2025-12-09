@@ -80,6 +80,13 @@ router.put(
   MeasurementController.updateMeasurement
 );
 
+router.get(
+  "/measurements/:id",
+  generalApiLimiter,
+  param("id").isString().notEmpty().isLength({ min: 25, max: 30 }),
+  MeasurementController.getSingleMeasurement
+);
+
 router.delete(
   "/measurements/:id",
   generalApiLimiter,

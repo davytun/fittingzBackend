@@ -163,6 +163,29 @@
  *         description: Measurement not found
  *       403:
  *         description: Forbidden
+ *   get:
+ *     summary: Get single measurement
+ *     tags: [Measurements]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Measurement ID
+ *     responses:
+ *       200:
+ *         description: Measurement retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Measurement'
+ *       404:
+ *         description: Measurement not found
+ *       403:
+ *         description: Forbidden
  *   delete:
  *     summary: Delete measurement
  *     tags: [Measurements]

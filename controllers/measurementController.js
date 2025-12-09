@@ -76,6 +76,23 @@ class MeasurementController {
     }
   }
 
+  async getSingleMeasurement(req, res, next) {
+    try {
+      const { id } = req.params;
+      const adminId = req.user.id;
+      const measurement = await MeasurementService.getSingleMeasurement({ id, adminId });
+      res.status(200).json(measurement);
+    } catch (error) {
+      if (error.message === 'Measurement not found') {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes('Forbidden')) {
+        return res.status(403).json({ message: error.message });
+      }
+      next(error);
+    }
+  }
+
   async deleteMeasurement(req, res, next) {
     try {
       const { id } = req.params;

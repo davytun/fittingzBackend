@@ -191,6 +191,49 @@ class MeasurementService {
     return measurement;
   }
 
+  async getSingleMeasurement({ id, adminId }) {
+    if (!adminId) {
+      throw new Error("Unauthorized. Admin ID not found.");
+    }
+
+    const measurement = await prisma.measurement.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        clientId: true,
+        orderId: true,
+        fields: true,
+        isDefault: true,
+        createdAt: true,
+        updatedAt: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+            adminId: true
+          }
+        },
+        order: {
+          select: {
+            id: true,
+            orderNumber: true
+          }
+        }
+      }
+    });
+
+    if (!measurement) {
+      throw new Error("Measurement not found");
+    }
+
+    if (measurement.client.adminId !== adminId) {
+      throw new Error("Forbidden: You do not have access to this measurement");
+    }
+
+    return measurement;
+  }
+
   async deleteMeasurement({ id, adminId }) {
     if (!adminId) {
       throw new Error("Unauthorized. Admin ID not found.");
