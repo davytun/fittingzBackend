@@ -76,10 +76,25 @@ const getUnreadCount = async (req, res) => {
   }
 };
 
+const generateSmartNotifications = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const { type } = req.query;
+    
+    await notificationService.generateBusinessNotifications(adminId, type);
+    
+    return ApiResponse.success(res, null, 'Smart notifications generated successfully');
+  } catch (error) {
+    console.error('Smart notifications error:', error);
+    return ApiResponse.error(res, 'Failed to generate smart notifications', 500);
+  }
+};
+
 module.exports = {
   getNotifications,
   markAsRead,
   markAllAsRead,
   deleteNotification,
-  getUnreadCount
+  getUnreadCount,
+  generateSmartNotifications
 };

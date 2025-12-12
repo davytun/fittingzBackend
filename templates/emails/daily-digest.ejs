@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Business Summary</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background: linear-gradient(135deg, #0F4C75 0%, #3282B8 100%); min-height: 100vh;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 20px 40px rgba(15, 76, 117, 0.15); overflow: hidden;">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #0F4C75 0%, #3282B8 100%); padding: 40px 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+                    📊 <%= businessName %>
+                </h1>
+                <p style="color: rgba(255, 255, 255, 0.9); margin: 8px 0 0 0; font-size: 16px; font-weight: 400;">
+                    Daily Business Summary
+                </p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div style="padding: 40px 30px;">
+                <h2 style="color: #0F4C75; margin: 0 0 30px 0; font-size: 20px; font-weight: 600; text-align: center;">
+                    Today's Activity
+                </h2>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                    <!-- New Orders -->
+                    <div style="background: #f0f9ff; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #e0f2fe;">
+                        <div style="font-size: 32px; font-weight: 700; color: #0F4C75; margin-bottom: 8px;">
+                            <%= stats.newOrders %>
+                        </div>
+                        <div style="font-size: 14px; color: #64748b; font-weight: 500;">
+                            New Orders
+                        </div>
+                    </div>
+
+                    <!-- New Clients -->
+                    <div style="background: #f0fdf4; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #dcfce7;">
+                        <div style="font-size: 32px; font-weight: 700; color: #16a34a; margin-bottom: 8px;">
+                            <%= stats.newClients %>
+                        </div>
+                        <div style="font-size: 14px; color: #64748b; font-weight: 500;">
+                            New Clients
+                        </div>
+                    </div>
+
+                    <!-- Payments -->
+                    <div style="background: #fefce8; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #fef3c7;">
+                        <div style="font-size: 32px; font-weight: 700; color: #ca8a04; margin-bottom: 8px;">
+                            <%= stats.paymentsReceived %>
+                        </div>
+                        <div style="font-size: 14px; color: #64748b; font-weight: 500;">
+                            Payments
+                        </div>
+                    </div>
+
+                    <!-- Revenue -->
+                    <div style="background: #fdf2f8; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #fce7f3;">
+                        <div style="font-size: 24px; font-weight: 700; color: #be185d; margin-bottom: 8px;">
+                            ₦<%= stats.totalRevenue.toLocaleString() %>
+                        </div>
+                        <div style="font-size: 14px; color: #64748b; font-weight: 500;">
+                            Revenue
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unread Notifications -->
+                <% if (notifications.length > 0) { %>
+                <div style="margin-top: 30px;">
+                    <h3 style="color: #0F4C75; margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">
+                        Pending Notifications (<%= notifications.length %>)
+                    </h3>
+                    
+                    <% notifications.forEach(notification => { %>
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #0F4C75;">
+                        <div style="font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 14px;">
+                            <%= notification.title %>
+                        </div>
+                        <div style="color: #6b7280; font-size: 13px;">
+                            <%= notification.message %>
+                        </div>
+                    </div>
+                    <% }); %>
+                </div>
+                <% } %>
+
+                <!-- Action Button -->
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="<%= dashboardUrl %>" style="
+                        display: inline-block;
+                        background: linear-gradient(135deg, #0F4C75 0%, #3282B8 100%);
+                        color: #ffffff;
+                        text-decoration: none;
+                        padding: 16px 32px;
+                        border-radius: 12px;
+                        font-weight: 600;
+                        font-size: 16px;
+                        box-shadow: 0 4px 12px rgba(15, 76, 117, 0.3);
+                    ">
+                        View Dashboard →
+                    </a>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                <p style="color: #6b7280; margin: 0 0 10px 0; font-size: 14px;">
+                    Daily digest from your <%= businessName %> system.
+                </p>
+                <p style="color: #9ca3af; margin: 0; font-size: 12px;">
+                    You can disable daily digests in your notification preferences.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= notification.title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Inter', Arial, sans-serif; background: linear-gradient(135deg, #0F4C75 0%, #3282B8 100%); min-height: 100vh;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <div style="background: #ffffff; border-radius: 16px; box-shadow: 0 20px 40px rgba(15, 76, 117, 0.15); overflow: hidden;">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #0F4C75 0%, #3282B8 100%); padding: 40px 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+                    🔔 <%= businessName %>
+                </h1>
+                <p style="color: rgba(255, 255, 255, 0.9); margin: 8px 0 0 0; font-size: 16px; font-weight: 400;">
+                    Business Alert
+                </p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 40px 30px;">
+                <!-- Priority Badge -->
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <span style="
+                        display: inline-block;
+                        padding: 8px 16px;
+                        border-radius: 20px;
+                        font-size: 12px;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        <% if (notification.priority === 'URGENT') { %>
+                            background: #fee2e2; color: #dc2626;
+                        <% } else if (notification.priority === 'HIGH') { %>
+                            background: #fef3c7; color: #d97706;
+                        <% } else { %>
+                            background: #dbeafe; color: #2563eb;
+                        <% } %>
+                    ">
+                        <%= notification.priority %> Priority
+                    </span>
+                </div>
+
+                <!-- Alert Title -->
+                <h2 style="color: #0F4C75; margin: 0 0 20px 0; font-size: 24px; font-weight: 600; text-align: center; line-height: 1.3;">
+                    <%= notification.title %>
+                </h2>
+
+                <!-- Alert Message -->
+                <div style="background: #f8fafc; border-radius: 12px; padding: 24px; margin-bottom: 30px; border-left: 4px solid #0F4C75;">
+                    <p style="color: #374151; margin: 0; font-size: 16px; line-height: 1.6;">
+                        <%= notification.message %>
+                    </p>
+                </div>
+
+                <!-- Action Button -->
+                <% if (actionUrl) { %>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="<%= actionUrl %>" style="
+                        display: inline-block;
+                        background: linear-gradient(135deg, #0F4C75 0%, #3282B8 100%);
+                        color: #ffffff;
+                        text-decoration: none;
+                        padding: 16px 32px;
+                        border-radius: 12px;
+                        font-weight: 600;
+                        font-size: 16px;
+                        box-shadow: 0 4px 12px rgba(15, 76, 117, 0.3);
+                        transition: all 0.3s ease;
+                    ">
+                        Take Action →
+                    </a>
+                </div>
+                <% } %>
+
+                <!-- Timestamp -->
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                    <p style="color: #6b7280; margin: 0; font-size: 14px;">
+                        Alert generated on <%= new Date(notification.createdAt).toLocaleString() %>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                <p style="color: #6b7280; margin: 0 0 10px 0; font-size: 14px;">
+                    This is an automated notification from your <%= businessName %> system.
+                </p>
+                <p style="color: #9ca3af; margin: 0; font-size: 12px;">
+                    You can manage your notification preferences in your dashboard settings.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

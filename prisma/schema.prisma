@@ -8,25 +8,26 @@ datasource db {
 }
 
 model Admin {
-  id                 String              @id @default(cuid())
-  email              String              @unique
-  password           String
-  businessName       String
-  contactPhone       String?
-  businessAddress    String?
-  profileImageUrl    String?
-  profileImagePublicId String?
-  isEmailVerified    Boolean             @default(false)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  clients            Client[]
-  Event              Event[]
-  Order              Order[]
-  Project            Project[]
-  styleImages        StyleImage[]
-  verificationTokens VerificationToken[]
-  recentUpdates      RecentUpdate[]
-  notifications      Notification[]
+  id                      String                    @id @default(cuid())
+  email                   String                    @unique
+  password                String
+  businessName            String
+  contactPhone            String?
+  businessAddress         String?
+  profileImageUrl         String?
+  profileImagePublicId    String?
+  isEmailVerified         Boolean                   @default(false)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  clients                 Client[]
+  Event                   Event[]
+  Order                   Order[]
+  Project                 Project[]
+  styleImages             StyleImage[]
+  verificationTokens      VerificationToken[]
+  recentUpdates           RecentUpdate[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference?
 }
 
 model VerificationToken {
@@ -249,6 +250,26 @@ model Notification {
   @@index([createdAt])
   @@index([type])
   @@index([priority])
+}
+
+model NotificationPreference {
+  id                      String  @id @default(cuid())
+  adminId                 String  @unique
+  emailNotifications      Boolean @default(true)
+  pushNotifications       Boolean @default(true)
+  orderStatusUpdates      Boolean @default(true)
+  paymentAlerts           Boolean @default(true)
+  clientReminders         Boolean @default(true)
+  systemAlerts            Boolean @default(true)
+  weeklyReports           Boolean @default(true)
+  highValueOrderThreshold Int     @default(75000)
+  inactiveClientDays      Int     @default(30)
+  overdueOrderAlerts      Boolean @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  admin                   Admin   @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
 }
 
 enum TokenType {

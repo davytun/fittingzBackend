@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const axios = require('axios');
+const emailCronService = require('../services/emailCronService');
 
 class CronManager {
     constructor() {
@@ -24,6 +25,7 @@ class CronManager {
         }
 
         this.setupKeepAlive();
+        emailCronService.init();
         console.log(`✅ Cron active - Pinging ${this.endpoint}/health`);
     }
 

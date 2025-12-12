@@ -102,6 +102,13 @@ setIO(io);
 
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
+  
+  // Join admin room for targeted notifications
+  socket.on('join_admin', (adminId) => {
+    socket.join(`admin_${adminId}`);
+    console.log(`Admin ${adminId} joined room`);
+  });
+  
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });

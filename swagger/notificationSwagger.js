@@ -155,3 +155,41 @@
  *       404:
  *         description: Notification not found
  */
+
+/**
+ * @swagger
+ * /api/v1/notifications/generate-business:
+ *   post:
+ *     summary: Generate business intelligence notifications
+ *     description: Creates smart notifications for overdue orders, payment reminders, missing measurements, and weekly summaries
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Business notifications generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     generated:
+ *                       type: integer
+ *                       description: Number of notifications generated
+ *                     types:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Types of notifications created
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
