@@ -25,7 +25,9 @@ class NotificationService {
 
   async getNotifications(adminId, options = {}) {
     const { page = 1, limit = 20, unreadOnly = false, type } = options;
-    const skip = (page - 1) * limit;
+    const validPage = isNaN(page) ? 1 : Math.max(1, page);
+    const validLimit = isNaN(limit) ? 20 : Math.max(1, Math.min(100, limit));
+    const skip = (validPage - 1) * validLimit;
 
     const where = {
       adminId,
@@ -41,7 +43,7 @@ class NotificationService {
           { createdAt: 'desc' }
         ],
         skip,
-        take: limit
+        take: validLimit
       }),
       prisma.notification.count({ where }),
       prisma.notification.count({
@@ -52,10 +54,10 @@ class NotificationService {
     return {
       notifications,
       pagination: {
-        page,
-        limit,
+        page: validPage,
+        limit: validLimit,
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / validLimit)
       },
       unreadCount
     };
