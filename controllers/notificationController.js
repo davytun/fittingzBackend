@@ -15,7 +15,8 @@ const getNotifications = async (req, res) => {
     
     return ApiResponse.success(res, result, 'Notifications retrieved successfully');
   } catch (error) {
-    return ApiResponse.error(res, 'Failed to retrieve notifications', 500);
+    console.error('Notification error:', error);
+    return ApiResponse.error(res, `Failed to retrieve notifications: ${error.message}`, 500);
   }
 };
 
