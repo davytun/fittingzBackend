@@ -3,6 +3,7 @@ const { validationResult } = require("express-validator");
 const { getIO } = require("../socket");
 const cache = require('../utils/cache');
 const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
+const { notifyProjectUpdate } = require('../utils/notificationHelper');
 
 const prisma = new PrismaClient();
 
@@ -302,6 +303,8 @@ exports.updateProject = async (req, res, next) => {
         updatedProject.id,
         'Project'
       );
+      
+      await notifyProjectUpdate(adminId, updatedProject.name, status, updatedProject.id);
     }
 
     res.status(200).json(updatedProject);

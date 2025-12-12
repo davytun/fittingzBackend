@@ -26,6 +26,7 @@ model Admin {
   styleImages        StyleImage[]
   verificationTokens VerificationToken[]
   recentUpdates      RecentUpdate[]
+  notifications      Notification[]
 }
 
 model VerificationToken {
@@ -228,6 +229,28 @@ model RecentUpdate {
   @@index([type])
 }
 
+model Notification {
+  id          String               @id @default(cuid())
+  type        NotificationType
+  priority    NotificationPriority @default(MEDIUM)
+  title       String
+  message     String
+  isRead      Boolean              @default(false)
+  entityId    String?
+  entityType  String?
+  actionUrl   String?
+  adminId     String
+  createdAt   DateTime             @default(now())
+  readAt      DateTime?
+  admin       Admin                @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([type])
+  @@index([priority])
+}
+
 enum TokenType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
@@ -260,4 +283,20 @@ enum ActivityType {
   PAYMENT_RECEIVED
   EVENT_CREATED
   MEASUREMENT_ADDED
+}
+
+enum NotificationType {
+  ORDER_STATUS
+  PAYMENT_RECEIVED
+  CLIENT_ADDED
+  PROJECT_UPDATE
+  SYSTEM_ALERT
+  REMINDER
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }

@@ -8,6 +8,7 @@ const eventRoutes = require("../routes/eventRoutes");
 const paymentRoutes = require("../routes/paymentRoutes");
 const profileRoutes = require("../routes/profileRoutes");
 const recentUpdateRoutes = require("../routes/recentUpdateRoutes");
+const notificationRoutes = require("../routes/notificationRoutes");
 const { generalApiLimiter } = require("../middlewares/rateLimitMiddleware");
 
 module.exports = (app) => {
@@ -26,6 +27,7 @@ module.exports = (app) => {
     app.use("/api/v1/events", generalApiLimiter, eventRoutes);
     app.use("/api/v1/clients", generalApiLimiter, paymentRoutes);
     app.use("/api/v1/recent-updates", generalApiLimiter, recentUpdateRoutes);
+    app.use("/api/v1/notifications", generalApiLimiter, notificationRoutes);
   } else {
     app.use("/api/v1/profile", profileRoutes);
     app.use("/api/v1/clients", clientRoutes);
@@ -37,6 +39,7 @@ module.exports = (app) => {
     app.use("/api/v1/events", eventRoutes);
     app.use("/api/v1/clients", paymentRoutes);
     app.use("/api/v1/recent-updates", recentUpdateRoutes);
+    app.use("/api/v1/notifications", notificationRoutes);
   }
   
   app.use("/test", require("../routes/health"));

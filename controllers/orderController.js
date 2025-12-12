@@ -4,6 +4,7 @@ const prisma = new PrismaClient();
 const { getIO } = require("../socket");
 const cache = require("../utils/cache");
 const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
+const { notifyOrderStatusChange } = require('../utils/notificationHelper');
 
 // Enhanced price validation
 const validatePrice = (price) => {
@@ -757,6 +758,8 @@ exports.updateOrderStatus = async (req, res, next) => {
       updatedOrder.id,
       'Order'
     );
+
+    await notifyOrderStatusChange(adminId, updatedOrder.orderNumber, status, updatedOrder.id);
 
     res.status(200).json({
       message: "Order status updated successfully",

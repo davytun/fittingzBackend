@@ -1,6 +1,7 @@
 const { validationResult } = require("express-validator");
 const ClientService = require("../services/clientService");
 const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
+const { notifyClientAdded } = require('../utils/notificationHelper');
 
 class ClientController {
   async createClient(req, res, next) {
@@ -28,6 +29,8 @@ class ClientController {
         client.id,
         'Client'
       );
+      
+      await notifyClientAdded(adminId, name, client.id);
       
       res.status(201).json(client);
     } catch (error) {

@@ -4,6 +4,7 @@ const prisma = new PrismaClient();
 const { getIO } = require("../socket");
 const cache = require('../utils/cache');
 const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
+const { notifyPaymentReceived } = require('../utils/notificationHelper');
 
 // Add payment to an order
 exports.addPayment = async (req, res, next) => {
@@ -88,6 +89,8 @@ exports.addPayment = async (req, res, next) => {
       payment.id,
       'Payment'
     );
+
+    await notifyPaymentReceived(adminId, updatedOrder.orderNumber, amount, payment.id);
 
     res.status(201).json({
       message: "Payment added successfully",
