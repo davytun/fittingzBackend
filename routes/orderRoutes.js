@@ -199,6 +199,22 @@ router.patch(
   OrderController.updateOrderDetails
 );
 
+router.patch(
+  "/:clientId/orders/:orderId/link-measurement",
+  generalApiLimiter,
+  validateIds,
+  [
+    body("measurementId")
+      .isString()
+      .notEmpty()
+      .isLength({ min: 25, max: 30 })
+      .withMessage(
+        "Invalid measurement ID format. Must be a valid CUID (25–30 characters)."
+      ),
+  ],
+  OrderController.linkMeasurementToOrder
+);
+
 router.delete(
   "/:clientId/orders/:orderId",
   generalApiLimiter,

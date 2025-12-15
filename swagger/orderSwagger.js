@@ -157,25 +157,25 @@
  *                   description:
  *                     type: string
  *                     example: Blue cotton dress
-         measurementId:
-           type: string
-           nullable: true
-           description: ID of the linked measurement
-           example: cmg5c2q7y0000tv4cpuk0wqa6
-         measurement:
-           type: object
-           nullable: true
-           description: Full measurement object (only when ?include=measurement is used)
-           properties:
-             id:
-               type: string
-               example: cmg5c2q7y0000tv4cpuk0wqa6
-             name:
-               type: string
-               example: John's Measurements
-             fields:
-               type: object
-               example: { chest: "40", waist: "32" }
+ *         measurementId:
+ *           type: string
+ *           nullable: true
+ *           description: ID of the linked measurement
+ *           example: cmg5c2q7y0000tv4cpuk0wqa6
+ *         measurement:
+ *           type: object
+ *           nullable: true
+ *           description: Full measurement object (only when ?include=measurement is used)
+ *           properties:
+ *             id:
+ *               type: string
+ *               example: cmg5c2q7y0000tv4cpuk0wqa6
+ *             name:
+ *               type: string
+ *               example: John's Measurements
+ *             fields:
+ *               type: object
+ *               example: { chest: "40", waist: "32" }
  */
 
 /**
@@ -199,13 +199,28 @@
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/CreateOrderRequest'
+ *           example:
+ *             price: 25000
+ *             currency: "NGN"
+ *             dueDate: "2025-07-20"
+ *             status: "PENDING_PAYMENT"
+ *             details: { "fabric": "cotton", "color": "blue" }
+ *             deposit: 5000
+ *             styleDescription: "Elegant evening gown"
+ *             note: "Rush order for wedding"
  *     responses:
  *       201:
  *         description: Order created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Order'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Order created successfully
+ *                 order:
+ *                   $ref: '#/components/schemas/Order'
  *       400:
  *         description: Validation errors
  *       403:
@@ -228,12 +243,23 @@
  *         name: page
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           default: 1
  *         description: Page number
  *       - in: query
  *         name: pageSize
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
  *         description: Number of orders per page
+ *       - in: query
+ *         name: include
+ *         schema:
+ *           type: string
+ *           enum: [measurement]
+ *         description: Include related data (measurement)
  *     responses:
  *       200:
  *         description: List of orders
@@ -261,6 +287,10 @@
  *         description: Forbidden
  *       404:
  *         description: Client not found
+ */
+
+/**
+ * @swagger
  * /api/v1/clients/{clientId}/orders/event/{eventId}:
  *   post:
  *     summary: Create a new order for an event and client
@@ -292,13 +322,23 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Order'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Order created successfully
+ *                 order:
+ *                   $ref: '#/components/schemas/Order'
  *       400:
  *         description: Validation errors
  *       403:
  *         description: Forbidden
  *       404:
  *         description: Event or client not found
+ */
+
+/**
+ * @swagger
  * /api/v1/clients/admin/orders:
  *   get:
  *     summary: Get all orders for the authenticated admin
@@ -310,15 +350,26 @@
  *         name: page
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           default: 1
  *         description: Page number
  *       - in: query
  *         name: pageSize
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
  *         description: Number of orders per page
+ *       - in: query
+ *         name: include
+ *         schema:
+ *           type: string
+ *           enum: [measurement]
+ *         description: Include related data (measurement)
  *     responses:
  *       200:
- *         description: List of orders
+ *         description: List of all orders for admin
  *         content:
  *           application/json:
  *             schema:
@@ -339,6 +390,14 @@
  *                       type: integer
  *                     totalPages:
  *                       type: integer
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
  * /api/v1/clients/{clientId}/orders/{orderId}:
  *   get:
  *     summary: Get a single order by ID
@@ -358,13 +417,25 @@
  *         schema:
  *           type: string
  *         description: The order ID
+ *       - in: query
+ *         name: include
+ *         schema:
+ *           type: string
+ *           enum: [measurement]
+ *         description: Include related data (measurement)
  *     responses:
  *       200:
  *         description: Order details
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Order'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Order retrieved successfully
+ *                 order:
+ *                   $ref: '#/components/schemas/Order'
  *       403:
  *         description: Forbidden
  *       404:
@@ -392,14 +463,54 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateOrderRequest'
+ *             type: object
+ *             properties:
+ *               details:
+ *                 type: object
+ *                 description: Custom details about the order
+ *               price:
+ *                 type: number
+ *                 description: The total price of the order
+ *               currency:
+ *                 type: string
+ *                 description: The currency of the order
+ *               dueDate:
+ *                 type: string
+ *                 format: date
+ *                 description: The due date for the order
+ *               status:
+ *                 type: string
+ *                 enum: [PENDING_PAYMENT, PROCESSING, READY_FOR_PICKUP, SHIPPED, DELIVERED, COMPLETED, CANCELLED]
+ *                 description: The status of the order
+ *               deposit:
+ *                 type: number
+ *                 description: Initial deposit for the order
+ *               styleDescription:
+ *                 type: string
+ *                 description: Description of the style
+ *               note:
+ *                 type: string
+ *                 description: Note for the order
+ *               measurementId:
+ *                 type: string
+ *                 description: Measurement ID to link to the order
+ *           example:
+ *             price: 30000
+ *             status: "PROCESSING"
+ *             note: "Updated requirements"
  *     responses:
  *       200:
  *         description: Order updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Order'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Order updated successfully
+ *                 order:
+ *                   $ref: '#/components/schemas/Order'
  *       400:
  *         description: Validation errors
  *       403:
@@ -427,10 +538,22 @@
  *     responses:
  *       200:
  *         description: Order deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Order deleted successfully
  *       403:
  *         description: Forbidden
  *       404:
  *         description: Order not found
+ */
+
+/**
+ * @swagger
  * /api/v1/clients/{clientId}/orders/{orderId}/status:
  *   patch:
  *     summary: Update order status
@@ -463,17 +586,87 @@
  *                 type: string
  *                 enum: [PENDING_PAYMENT, PROCESSING, READY_FOR_PICKUP, SHIPPED, DELIVERED, COMPLETED, CANCELLED]
  *                 example: PROCESSING
+ *                 description: New status for the order
+ *           example:
+ *             status: "PROCESSING"
  *     responses:
  *       200:
  *         description: Order status updated successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Order'
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Order status updated successfully
+ *                 order:
+ *                   $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Validation errors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Order not found
+ */
+
+/**
+ * @swagger
+ * /api/v1/clients/{clientId}/orders/{orderId}/link-measurement:
+ *   patch:
+ *     summary: Link measurement to order
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The client ID
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The order ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - measurementId
+ *             properties:
+ *               measurementId:
+ *                 type: string
+ *                 description: ID of the measurement to link
+ *                 example: cmg5c2q7y0000tv4cpuk0wqa6
+ *           example:
+ *             measurementId: "cmg5c2q7y0000tv4cpuk0wqa6"
+ *     responses:
+ *       200:
+ *         description: Measurement linked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Measurement linked to order successfully
+ *                 order:
+ *                   $ref: '#/components/schemas/Order'
  *       400:
  *         description: Validation errors
  *       403:
  *         description: Forbidden
  *       404:
- *         description: Order not found
+ *         description: Order or measurement not found
  */

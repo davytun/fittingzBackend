@@ -1026,3 +1026,111 @@ exports.deleteOrder = async (req, res, next) => {
     next(error);
   }
 };
+
+// Link measurement to order
+exports.linkMeasurementToOrder = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      message: "Validation errors",
+      errors: errors.array(),
+    });
+  }
+
+  const { orderId, clientId } = req.params;
+  const { measurementId } = req.body;
+  const adminId = req.user.id;
+
+  try {
+    // Verify order exists and belongs to admin
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, adminId: true, clientId: true, orderNumber: true },
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (order.adminId !== adminId) {
+      return res.status(403).json({
+        message: "Forbidden: You cannot modify this order",
+      });
+    }
+
+    if (order.clientId !== clientId) {
+      return res.status(400).json({
+        message: "Order does not belong to the specified client",
+      });
+    }
+
+    // Verify measurement exists and belongs to the same client
+    const measurement = await prisma.measurement.findUnique({
+      where: { id: measurementId },
+      select: { id: true, clientId: true, name: true },
+    });
+
+    if (!measurement) {
+      return res.status(404).json({ message: "Measurement not found" });
+    }
+
+    if (measurement.clientId !== clientId) {
+      return res.status(403).json({
+        message: "Measurement does not belong to this client",
+      });
+    }
+
+    // Update measurement to link it to the order
+    await prisma.measurement.update({
+      where: { id: measurementId },
+      data: { orderId: orderId },
+    });
+
+    // Get updated order with measurement
+    const updatedOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        client: { select: { name: true } },
+        project: { select: { name: true } },
+        event: { select: { name: true } },
+        measurements: true,
+        styleImages: {
+          include: {
+            styleImage: true,
+          },
+        },
+        payments: true,
+      },
+    });
+
+    // Clear cache
+    await cache.delPattern(`orders:admin:${adminId}:*`);
+    await cache.delPattern(`orders:client:${clientId}:*`);
+    await cache.del(`order:${orderId}`);
+
+    await trackActivity(
+      adminId,
+      ActivityTypes.MEASUREMENT_ADDED,
+      `Measurement linked to order: ${order.orderNumber}`,
+      `Measurement "${measurement.name}" linked to order ${order.orderNumber}`,
+      orderId,
+      'Order'
+    );
+
+    res.status(200).json({
+      message: "Measurement linked to order successfully",
+      order: {
+        ...updatedOrder,
+        measurementId: measurementId,
+      },
+    });
+
+    getIO().emit("order_updated", updatedOrder);
+  } catch (error) {
+    console.error("Link measurement error:", error);
+    res.status(500).json({
+      message: "Failed to link measurement to order",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
