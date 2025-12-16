@@ -54,13 +54,19 @@ exports.addPayment = async (req, res, next) => {
       });
     }
 
-    // Create payment record
+    // Create payment record and update order deposit
     const payment = await prisma.payment.create({
       data: {
         orderId,
         amount: parseFloat(Number(amount).toFixed(2)),
         notes: notes || null,
       },
+    });
+
+    // Update order deposit to reflect total payments
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { deposit: newTotal }
     });
 
     // Get updated order with all payments
@@ -185,6 +191,13 @@ exports.createPayment = async (req, res, next) => {
       data: { orderId, amount: parseFloat(Number(amount).toFixed(2)), notes: notes || null },
     });
 
+    // Update order deposit
+    const newTotal = totalPaid + Number(amount);
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { deposit: newTotal }
+    });
+
     await cache.delPattern(`orders:admin:${adminId}:*`);
     await trackActivity(adminId, ActivityTypes.PAYMENT_RECEIVED, `Payment received: ${order.orderNumber}`, `Payment of ${amount} received`, payment.id, 'Payment');
 
@@ -277,6 +290,16 @@ exports.deletePayment = async (req, res, next) => {
     }
 
     await prisma.payment.delete({ where: { id: paymentId } });
+
+    // Recalculate and update order deposit
+    const remainingPayments = await prisma.payment.findMany({
+      where: { orderId: payment.orderId }
+    });
+    const newDeposit = remainingPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+    await prisma.order.update({
+      where: { id: payment.orderId },
+      data: { deposit: newDeposit }
+    });
 
     // Clear cache
     await cache.delPattern(`orders:admin:${adminId}:*`);
