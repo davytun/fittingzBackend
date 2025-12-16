@@ -153,6 +153,108 @@ exports.getOrderPayments = async (req, res, next) => {
   }
 };
 
+// Create new payment (standalone)
+exports.createPayment = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      message: "Validation errors",
+      errors: errors.array(),
+    });
+  }
+
+  const { orderId, amount, notes } = req.body;
+  const adminId = req.user.id;
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { payments: true, client: { select: { name: true } } },
+    });
+
+    if (!order || order.adminId !== adminId) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const totalPaid = order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    if (totalPaid + Number(amount) > Number(order.price)) {
+      return res.status(400).json({ message: "Payment exceeds remaining balance" });
+    }
+
+    const payment = await prisma.payment.create({
+      data: { orderId, amount: parseFloat(Number(amount).toFixed(2)), notes: notes || null },
+    });
+
+    await cache.delPattern(`orders:admin:${adminId}:*`);
+    await trackActivity(adminId, ActivityTypes.PAYMENT_RECEIVED, `Payment received: ${order.orderNumber}`, `Payment of ${amount} received`, payment.id, 'Payment');
+
+    res.status(201).json({ message: "Payment created successfully", payment });
+    getIO().emit("payment_added", { payment, orderId });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get payments history for admin
+exports.getPaymentsHistory = async (req, res, next) => {
+  const adminId = req.user.id;
+  const { page = 1, limit = 20 } = req.query;
+
+  try {
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const payments = await prisma.payment.findMany({
+      where: {
+        order: { adminId }
+      },
+      include: {
+        order: {
+          select: {
+            orderNumber: true,
+            price: true,
+            currency: true,
+            client: {
+              select: { name: true }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: parseInt(limit)
+    });
+
+    const totalPayments = await prisma.payment.count({
+      where: {
+        order: { adminId }
+      }
+    });
+
+    const totalAmount = await prisma.payment.aggregate({
+      where: {
+        order: { adminId }
+      },
+      _sum: { amount: true }
+    });
+
+    res.status(200).json({
+      payments,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalPayments,
+        pages: Math.ceil(totalPayments / parseInt(limit))
+      },
+      summary: {
+        totalAmount: totalAmount._sum.amount || 0,
+        totalPayments
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Delete a payment
 exports.deletePayment = async (req, res, next) => {
   const { paymentId } = req.params;

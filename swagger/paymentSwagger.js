@@ -218,3 +218,120 @@
  *       500:
  *         description: Server error
  */
+/**
+ * @swagger
+ * /api/v1/clients/payments/history:
+ *   get:
+ *     summary: Get payments history for admin
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of payments per page
+ *     responses:
+ *       200:
+ *         description: Payments history retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 payments:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - $ref: '#/components/schemas/Payment'
+ *                       - type: object
+ *                         properties:
+ *                           order:
+ *                             type: object
+ *                             properties:
+ *                               orderNumber:
+ *                                 type: string
+ *                               price:
+ *                                 type: number
+ *                               currency:
+ *                                 type: string
+ *                               client:
+ *                                 type: object
+ *                                 properties:
+ *                                   name:
+ *                                     type: string
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *                 summary:
+ *                   type: object
+ *                   properties:
+ *                     totalAmount:
+ *                       type: number
+ *                     totalPayments:
+ *                       type: integer
+ *       500:
+ *         description: Server error
+ */
+/**
+ * @swagger
+ * /api/v1/clients/payments/new:
+ *   post:
+ *     summary: Create a new payment
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - orderId
+ *               - amount
+ *             properties:
+ *               orderId:
+ *                 type: string
+ *                 description: The ID of the order
+ *               amount:
+ *                 type: number
+ *                 format: float
+ *                 minimum: 0.01
+ *                 description: Payment amount
+ *               notes:
+ *                 type: string
+ *                 description: Optional payment notes
+ *     responses:
+ *       201:
+ *         description: Payment created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 payment:
+ *                   $ref: '#/components/schemas/Payment'
+ *       400:
+ *         description: Validation error or payment exceeds balance
+ *       404:
+ *         description: Order not found
+ */
