@@ -52,8 +52,8 @@ const validateOrderFields = [
   body("currency")
     .optional()
     .isString()
-    .isIn(["NGN", "USD", "EUR"])
-    .withMessage("Invalid currency. Must be one of: NGN, USD, EUR."),
+    .isLength({ min: 1, max: 10 })
+    .withMessage("Currency must be a string between 1-10 characters."),
   body("dueDate")
     .optional()
     .isString()

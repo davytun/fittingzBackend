@@ -17,7 +17,7 @@
  *           example: 25000
  *         currency:
  *           type: string
- *           description: The currency of the order (e.g., NGN, USD, EUR).
+ *           description: The currency of the order (e.g., NGN, USD, EUR, GBP, CAD, etc.).
  *           example: NGN
  *         dueDate:
  *           type: string
