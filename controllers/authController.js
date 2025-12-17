@@ -234,6 +234,31 @@ class AdminController {
       next(error);
     }
   }
+
+  async changePassword(req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const firstError = errors.array()[0];
+      return ApiResponse.error(res, firstError.msg, 400, "VALIDATION_ERROR", errors.array());
+    }
+
+    try {
+      const result = await AdminService.changePassword({
+        adminId: req.user.id,
+        currentPassword: req.body.currentPassword,
+        newPassword: req.body.newPassword
+      });
+      return ApiResponse.success(res, null, result.message);
+    } catch (error) {
+      if (error.message.includes('Current password is incorrect')) {
+        return ApiResponse.error(res, "Current password is incorrect", 400, "INVALID_CURRENT_PASSWORD");
+      }
+      if (error.message.includes('New password must be different')) {
+        return ApiResponse.error(res, "New password must be different from your current password", 400, "SAME_PASSWORD");
+      }
+      next(error);
+    }
+  }
 }
 
 module.exports = new AdminController();

@@ -487,6 +487,38 @@ class AdminService {
         "Password updated successfully. You can now log in.",
     };
   }
+
+  async changePassword({ adminId, currentPassword, newPassword }) {
+    const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+    if (!admin) {
+      throw new Error("Account not found.");
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, admin.password);
+    if (!isCurrentPasswordValid) {
+      throw new Error("Current password is incorrect.");
+    }
+
+    // Check if new password is same as current password
+    const isSamePassword = await bcrypt.compare(newPassword, admin.password);
+    if (isSamePassword) {
+      throw new Error("New password must be different from your current password.");
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.admin.update({
+      where: { id: adminId },
+      data: { password: hashedPassword },
+    });
+
+    return {
+      message: "Password changed successfully.",
+    };
+  }
 }
 
 module.exports = new AdminService();

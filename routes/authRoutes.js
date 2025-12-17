@@ -1,6 +1,7 @@
 const express = require("express");
 const { body } = require("express-validator");
 const authController = require("../controllers/authController");
+const { authenticateJwt } = require("../middlewares/authMiddleware");
 const {
   loginLimiter,
   registerLimiter,
@@ -177,6 +178,37 @@ router.post(
 router.post(
   "/logout",
   authController.logout
+);
+
+const validateChangePasswordInput = [
+  body("currentPassword")
+    .notEmpty()
+    .withMessage("Current password is required."),
+  body("newPassword")
+    .isLength({ min: 6 })
+    .withMessage("New password must be at least 6 characters long.")
+    .custom((value) => {
+      if (!/(?=.*[a-z])/.test(value)) {
+        throw new Error('New password must contain at least one lowercase letter');
+      }
+      if (!/(?=.*[A-Z])/.test(value)) {
+        throw new Error('New password must contain at least one uppercase letter');
+      }
+      if (!/(?=.*\d)/.test(value)) {
+        throw new Error('New password must contain at least one number');
+      }
+      if (!/(?=.*[^a-zA-Z0-9])/.test(value)) {
+        throw new Error('New password must contain at least one special character');
+      }
+      return true;
+    }),
+];
+
+router.post(
+  "/change-password",
+  authenticateJwt,
+  validateChangePasswordInput,
+  authController.changePassword
 );
 
 module.exports = router;
