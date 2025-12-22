@@ -115,7 +115,17 @@ const validateOrderFields = [
 ];
 
 // Validation for order updates - more lenient
-const validateOrderUpdateFields = [];
+const validateOrderUpdateFields = [
+  body("status")
+    .optional()
+    .isString()
+    .isIn(Object.values(OrderStatus))
+    .withMessage(`Status must be one of: ${Object.values(OrderStatus).join(", ")}.`),
+  body("note")
+    .optional()
+    .isString()
+    .withMessage("Note must be a string.")
+];
 
 // Validation for order status update
 const validateOrderStatus = [
