@@ -1,6 +1,7 @@
 const { validationResult } = require("express-validator");
 const StyleImageService = require("../services/styleImageService");
 const { cloudinary } = require("../config/cloudinary");
+const cache = require("../utils/cache");
 
 exports.uploadStyleImage = async (req, res, next) => {
   const errors = validationResult(req);
@@ -49,6 +50,11 @@ exports.uploadStyleImage = async (req, res, next) => {
       category,
       description,
     });
+    
+    // Clear related caches
+    await cache.delPattern(`style_images:client:${clientId}:*`);
+    await cache.delPattern(`client_details:${clientId}:*`);
+    
     res.status(201).json(styleImages);
   } catch (error) {
     if (req.files && req.files.length > 0) {
@@ -120,18 +126,32 @@ exports.uploadStyleImageForAdmin = async (req, res, next) => {
 };
 
 exports.getStyleImagesByClientId = async (req, res, next) => {
+  const start = Date.now();
   const { clientId } = req.params;
   const adminId = req.user.id;
   const page = parseInt(req.query.page, 10) || 1;
   const pageSize = parseInt(req.query.pageSize, 10) || 10;
+  const cacheKey = `style_images:client:${clientId}:${adminId}:${page}:${pageSize}`;
 
   try {
+    // Check cache first
+    const cachedImages = await cache.get(cacheKey);
+    if (cachedImages) {
+      console.log(`getStyleImagesByClientId took ${Date.now() - start} ms (cache hit)`);
+      return res.status(200).json(cachedImages);
+    }
+    
     const result = await StyleImageService.getStyleImagesByClientId({
       clientId,
       adminId,
       page,
       pageSize,
     });
+    
+    // Cache for 15 minutes
+    await cache.set(cacheKey, result, 900);
+    
+    console.log(`getStyleImagesByClientId took ${Date.now() - start} ms`);
     res.status(200).json(result);
   } catch (error) {
     if (error.message === "Client not found") {

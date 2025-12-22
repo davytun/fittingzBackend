@@ -682,7 +682,8 @@ exports.getOrderById = async (req, res, next) => {
     const orderWithMeasurementId = {
       ...order,
       measurementId: order.measurements.length > 0 ? order.measurements[0].id : null,
-      measurement: req.query.include === 'measurement' && order.measurements.length > 0 ? order.measurements[0] : undefined
+      measurement: req.query.include === 'measurement' && order.measurements.length > 0 ? order.measurements[0] : undefined,
+      outstandingAmount: Number(order.price) - order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
     };
 
     console.log(`getOrderById took ${Date.now() - start} ms`);

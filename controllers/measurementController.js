@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const MeasurementService = require('../services/measurementService');
 const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
+const cache = require('../utils/cache');
 
 class MeasurementController {
   async addMeasurement(req, res, next) {
@@ -24,6 +25,10 @@ class MeasurementController {
         'Measurement'
       );
       
+      // Clear related caches
+      await cache.delPattern(`measurements:client:${clientId}:*`);
+      await cache.delPattern(`client_details:${clientId}:*`);
+      
       res.status(201).json(measurement);
     } catch (error) {
       if (error.message === 'Client not found' || error.message === 'Order not found') {
@@ -37,10 +42,25 @@ class MeasurementController {
   }
 
   async getMeasurementsByClientId(req, res, next) {
+    const start = Date.now();
     try {
       const { clientId } = req.params;
       const adminId = req.user.id;
+      const cacheKey = `measurements:client:${clientId}:${adminId}`;
+      
+      // Check cache first
+      const cachedMeasurements = await cache.get(cacheKey);
+      if (cachedMeasurements) {
+        console.log(`getMeasurementsByClientId took ${Date.now() - start} ms (cache hit)`);
+        return res.status(200).json(cachedMeasurements);
+      }
+      
       const measurements = await MeasurementService.getMeasurementsByClientId({ clientId, adminId });
+      
+      // Cache for 10 minutes
+      await cache.set(cacheKey, measurements, 600);
+      
+      console.log(`getMeasurementsByClientId took ${Date.now() - start} ms`);
       res.status(200).json(measurements);
     } catch (error) {
       if (error.message === 'Client not found') {

@@ -131,6 +131,19 @@ router.get(
   validateClientId,
   clientController.getClientById
 );
+router.get(
+  "/:id/details",
+  generalApiLimiter,
+  validateClientId,
+  clientController.getClientDetails
+);
+
+// Dashboard route
+router.get(
+  "/dashboard/stats",
+  generalApiLimiter,
+  clientController.getDashboardStats
+);
 router.patch(
   "/:id",
   generalApiLimiter,

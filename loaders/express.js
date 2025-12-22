@@ -4,6 +4,7 @@ const compression = require("compression");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const passport = require("passport");
+const { performanceMonitor } = require("../middlewares/performanceMiddleware");
 
 module.exports = (app) => {
   // Load allowed origins from env
@@ -44,6 +45,9 @@ module.exports = (app) => {
 
   // CORS must come before Helmet
   app.use(cors(corsOptions));
+  
+  // Performance monitoring
+  app.use(performanceMonitor);
   
   // Security & performance middlewares
   app.use(helmet({ crossOriginResourcePolicy: false }));
