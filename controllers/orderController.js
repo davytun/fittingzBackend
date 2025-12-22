@@ -928,6 +928,8 @@ exports.updateOrderDetails = async (req, res, next) => {
         details: details !== undefined ? details : undefined,
         price: safePrice,
         currency: currency || undefined,
+        status: req.body.status !== undefined ? req.body.status : undefined,
+        note: req.body.note !== undefined ? req.body.note : undefined,
         dueDate: dueDate
           ? parseOrderDate(dueDate)
           : dueDate === null
