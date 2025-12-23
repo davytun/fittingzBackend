@@ -208,9 +208,13 @@ exports.createOrderForEvent = async (req, res, next) => {
       });
     }
 
-    // Clear cache
-    await cache.delPattern(`orders:admin:${adminId}:*`);
-    await cache.delPattern(`orders:client:${clientId}:*`);
+    // Clear cache in parallel
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${clientId}:*`),
+      cache.delPattern(`client_details:${clientId}:*`),
+      cache.delPattern(`dashboard:${adminId}`)
+    ]);
 
     await trackActivity(
       adminId,
@@ -430,33 +434,47 @@ exports.createOrderForClient = async (req, res, next) => {
       },
     });
 
+    // Parallel operations after order creation
+    const operations = [];
+    
     // Create initial payment if deposit is provided
     if (deposit && deposit > 0) {
-      await prisma.payment.create({
-        data: {
-          orderId: order.id,
-          amount: parseFloat(deposit.toFixed(2)),
-          notes: "Initial deposit",
-        },
-      });
+      operations.push(
+        prisma.payment.create({
+          data: {
+            orderId: order.id,
+            amount: parseFloat(deposit.toFixed(2)),
+            notes: "Initial deposit",
+          },
+        })
+      );
     }
 
     // Link measurement if provided
     if (measurementId) {
-      await prisma.measurement.update({
-        where: { id: measurementId },
-        data: { orderId: order.id },
-      });
+      operations.push(
+        prisma.measurement.update({
+          where: { id: measurementId },
+          data: { orderId: order.id },
+        })
+      );
     }
 
     // Link style images if provided
     if (styleImageIds && styleImageIds.length > 0) {
-      await prisma.orderStyleImage.createMany({
-        data: styleImageIds.map((imageId) => ({
-          orderId: order.id,
-          styleImageId: imageId,
-        })),
-      });
+      operations.push(
+        prisma.orderStyleImage.createMany({
+          data: styleImageIds.map((imageId) => ({
+            orderId: order.id,
+            styleImageId: imageId,
+          })),
+        })
+      );
+    }
+
+    // Execute all operations in parallel
+    if (operations.length > 0) {
+      await Promise.all(operations);
     }
 
     // Calculate outstanding balance
@@ -466,9 +484,13 @@ exports.createOrderForClient = async (req, res, next) => {
     // Use the provided measurementId directly
     const linkedMeasurementId = measurementId || null;
 
-    // Clear cache
-    await cache.delPattern(`orders:admin:${adminId}:*`);
-    await cache.delPattern(`orders:client:${clientId}:*`);
+    // Clear cache in parallel
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${clientId}:*`),
+      cache.delPattern(`client_details:${clientId}:*`),
+      cache.delPattern(`dashboard:${adminId}`)
+    ]);
 
     await trackActivity(
       adminId,
@@ -516,28 +538,30 @@ exports.getAllOrdersForAdmin = async (req, res, next) => {
       return res.status(200).json(cachedData);
     }
 
-    const orders = await prisma.order.findMany({
-      where: { adminId },
-      include: {
-        client: { select: { name: true, id: true } },
-        project: { select: { name: true, id: true } },
-        event: { select: { name: true, id: true } },
-        measurements: req.query.include === 'measurement' ? true : { select: { id: true } },
-        styleImages: {
-          include: {
-            styleImage: true,
+    // Parallel database queries
+    const [orders, totalOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: { adminId },
+        include: {
+          client: { select: { name: true, id: true } },
+          project: { select: { name: true, id: true } },
+          event: { select: { name: true, id: true } },
+          measurements: req.query.include === 'measurement' ? true : { select: { id: true } },
+          styleImages: {
+            include: {
+              styleImage: true,
+            },
           },
+          payments: true,
         },
-        payments: true,
-      },
-      orderBy: { createdAt: "desc" },
-      skip: skip,
-      take: pageSize,
-    });
-
-    const totalOrders = await prisma.order.count({
-      where: { adminId },
-    });
+        orderBy: { createdAt: "desc" },
+        skip: skip,
+        take: pageSize,
+      }),
+      prisma.order.count({
+        where: { adminId },
+      })
+    ]);
 
     // Add measurementId to each order
     const ordersWithMeasurementId = orders.map(order => ({
@@ -746,10 +770,12 @@ exports.updateOrderStatus = async (req, res, next) => {
       },
     });
 
-    // Clear cache
-    await cache.delPattern(`orders:admin:${adminId}:*`);
-    await cache.delPattern(`orders:client:${updatedOrder.clientId}:*`);
-    await cache.del(`order:${orderId}`);
+    // Clear cache in parallel
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${updatedOrder.clientId}:*`),
+      cache.del(`order:${orderId}`)
+    ]);
 
     await trackActivity(
       adminId,
@@ -979,10 +1005,12 @@ exports.updateOrderDetails = async (req, res, next) => {
       }
     }
 
-    // Clear cache
-    await cache.delPattern(`orders:admin:${adminId}:*`);
-    await cache.delPattern(`orders:client:${updatedOrder.clientId}:*`);
-    await cache.del(`order:${orderId}`);
+    // Clear cache in parallel
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${updatedOrder.clientId}:*`),
+      cache.del(`order:${orderId}`)
+    ]);
 
     res.status(200).json(updatedOrder);
     getIO().emit("order_updated", updatedOrder);
@@ -1013,10 +1041,12 @@ exports.deleteOrder = async (req, res, next) => {
 
     await prisma.order.delete({ where: { id: orderId } });
 
-    // Clear cache
-    await cache.delPattern(`orders:admin:${adminId}:*`);
-    await cache.delPattern(`orders:client:${order.clientId}:*`);
-    await cache.del(`order:${orderId}`);
+    // Clear cache in parallel
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${order.clientId}:*`),
+      cache.del(`order:${orderId}`)
+    ]);
 
     res.status(200).json({ message: "Order deleted successfully" });
     getIO().emit("order_deleted", { id: orderId });
@@ -1106,10 +1136,12 @@ exports.linkMeasurementToOrder = async (req, res, next) => {
       },
     });
 
-    // Clear cache
-    await cache.delPattern(`orders:admin:${adminId}:*`);
-    await cache.delPattern(`orders:client:${clientId}:*`);
-    await cache.del(`order:${orderId}`);
+    // Clear cache in parallel
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${clientId}:*`),
+      cache.del(`order:${orderId}`)
+    ]);
 
     await trackActivity(
       adminId,
