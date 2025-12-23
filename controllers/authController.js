@@ -212,6 +212,22 @@ class AdminController {
       const result = await AdminService.resetPassword(req.body);
       return ApiResponse.success(res, null, "Password reset");
     } catch (error) {
+      console.error('Reset password error:', error);
+      if (error.message.includes('No account found')) {
+        return ApiResponse.error(res, "No account found with this email address", 404, "ACCOUNT_NOT_FOUND");
+      }
+      if (error.message.includes('No reset code found')) {
+        return ApiResponse.error(res, "No reset code found. Please request a new password reset.", 400, "NO_RESET_CODE");
+      }
+      if (error.message.includes('expired')) {
+        return ApiResponse.error(res, "Your reset code has expired. Please request a new one.", 400, "CODE_EXPIRED");
+      }
+      if (error.message.includes('Invalid reset code')) {
+        return ApiResponse.error(res, "Invalid reset code. Please check and try again.", 400, "INVALID_CODE");
+      }
+      if (error.message.includes('same password')) {
+        return ApiResponse.error(res, "Please choose a different password from your current one", 400, "SAME_PASSWORD");
+      }
       next(error);
     }
   }
