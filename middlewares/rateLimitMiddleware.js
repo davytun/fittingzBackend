@@ -67,8 +67,8 @@ const createOrderLimiter = rateLimit({
 });
 
 const generalApiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: process.env.NODE_ENV === 'development' ? 1 * 60 * 1000 : 15 * 60 * 1000, // 1 min in dev, 15 min in prod
+  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // 1000 in dev, 100 in prod
   standardHeaders: true,
   legacyHeaders: false,
   message: {
