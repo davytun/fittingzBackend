@@ -213,7 +213,8 @@ exports.createOrderForEvent = async (req, res, next) => {
       cache.delPattern(`orders:admin:${adminId}:*`),
       cache.delPattern(`orders:client:${clientId}:*`),
       cache.delPattern(`client_details:${clientId}:*`),
-      cache.delPattern(`dashboard:${adminId}`)
+      cache.delPattern(`dashboard:${adminId}`),
+      cache.delPattern(`client:${clientId}:*`) // Also clear individual client cache
     ]);
 
     await trackActivity(
@@ -489,7 +490,8 @@ exports.createOrderForClient = async (req, res, next) => {
       cache.delPattern(`orders:admin:${adminId}:*`),
       cache.delPattern(`orders:client:${clientId}:*`),
       cache.delPattern(`client_details:${clientId}:*`),
-      cache.delPattern(`dashboard:${adminId}`)
+      cache.delPattern(`dashboard:${adminId}`),
+      cache.delPattern(`client:${clientId}:*`) // Also clear individual client cache
     ]);
 
     await trackActivity(
