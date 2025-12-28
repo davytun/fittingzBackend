@@ -9,6 +9,7 @@ const paymentRoutes = require("../routes/paymentRoutes");
 const profileRoutes = require("../routes/profileRoutes");
 const recentUpdateRoutes = require("../routes/recentUpdateRoutes");
 const notificationRoutes = require("../routes/notificationRoutes");
+const dashboardRoutes = require("../routes/dashboardRoutes");
 const { generalApiLimiter } = require("../middlewares/rateLimitMiddleware");
 
 module.exports = (app) => {
@@ -17,6 +18,7 @@ module.exports = (app) => {
   app.use("/api/v1/auth", authRoutes);
   
   if (isProduction) {
+    app.use("/api/v1/dashboard", generalApiLimiter, dashboardRoutes);
     app.use("/api/v1/profile", generalApiLimiter, profileRoutes);
     app.use("/api/v1/clients", generalApiLimiter, clientRoutes);
     app.use("/api/v1/clients", generalApiLimiter, measurementRoutes);
@@ -29,6 +31,7 @@ module.exports = (app) => {
     app.use("/api/v1/recent-updates", generalApiLimiter, recentUpdateRoutes);
     app.use("/api/v1/notifications", generalApiLimiter, notificationRoutes);
   } else {
+    app.use("/api/v1/dashboard", dashboardRoutes);
     app.use("/api/v1/profile", profileRoutes);
     app.use("/api/v1/clients", clientRoutes);
     app.use("/api/v1/clients", measurementRoutes);
