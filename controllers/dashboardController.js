@@ -21,16 +21,111 @@ class DashboardController {
       if (list.includes('events')) queries.events = prisma.event.findMany({ where: { adminId }, take: 50, orderBy: { createdAt: 'desc' } });
       if (list.includes('gallery')) queries.gallery = prisma.styleImage.findMany({ where: { adminId }, take: 50, orderBy: { createdAt: 'desc' } });
 
+      // Add summary data
+      const [summaryData, recentClients, recentOrders, orderStats, recentUpdates] = await Promise.all([
+        this.getSummaryData(adminId),
+        this.getRecentClientsData(adminId),
+        this.getRecentOrdersData(adminId),
+        this.getOrderStatsData(adminId),
+        this.getRecentUpdatesData(adminId)
+      ]);
+
       const result = {};
       await Promise.all(Object.entries(queries).map(async ([key, query]) => {
         result[key] = await query;
       }));
+
+      // Add the additional data you requested
+      result.summary = summaryData;
+      result.recentClients = recentClients;
+      result.recentOrders = recentOrders;
+      result.orderStats = orderStats;
+      result.recentUpdates = recentUpdates;
 
       await cache.set(cacheKey, result, 300);
       res.json(result);
     } catch (error) {
       next(error);
     }
+  }
+
+
+
+  async getSummaryData(adminId) {
+    const [totalClients, totalOrders, totalRevenue] = await Promise.all([
+      prisma.client.count({ where: { adminId } }),
+      prisma.order.count({ where: { adminId } }),
+      prisma.order.aggregate({ where: { adminId }, _sum: { price: true } })
+    ]);
+    return {
+      totalClients,
+      totalOrders,
+      totalRevenue: Number(totalRevenue._sum.price || 0)
+    };
+  }
+
+  async getRecentClientsData(adminId) {
+    return prisma.client.findMany({
+      where: { adminId },
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        measurements: { select: { id: true, fields: true, createdAt: true, updatedAt: true } },
+        styleImages: { select: { id: true, imageUrl: true, publicId: true, category: true, description: true, createdAt: true, updatedAt: true } },
+        _count: { select: { measurements: true, styleImages: true } }
+      }
+    });
+  }
+
+  async getRecentOrdersData(adminId) {
+    const orders = await prisma.order.findMany({
+      where: { adminId },
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        client: { select: { id: true, name: true } },
+        payments: { select: { id: true, amount: true, paymentDate: true, notes: true } },
+        styleImages: { include: { styleImage: { select: { id: true, imageUrl: true, description: true } } } },
+        project: { select: { name: true } },
+        event: { select: { name: true } },
+        measurements: { select: { id: true, name: true, fields: true }, take: 1 }
+      }
+    });
+
+    return orders.map(order => {
+      const totalPaid = order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+      const outstandingBalance = Number(order.price) - totalPaid;
+      return {
+        ...order,
+        price: Number(order.price),
+        deposit: Number(order.deposit || 0),
+        totalPaid,
+        outstandingBalance,
+        outstandingAmount: outstandingBalance,
+        measurement: order.measurements[0] || null
+      };
+    });
+  }
+
+  async getOrderStatsData(adminId) {
+    return prisma.order.groupBy({
+      by: ['status'],
+      where: { adminId },
+      _count: { _all: true },
+      _sum: { price: true }
+    }).then(stats => stats.map(stat => ({
+      status: stat.status,
+      _count: { _all: stat._count._all },
+      _sum: { price: Number(stat._sum.price || 0) }
+    })));
+  }
+
+  async getRecentUpdatesData(adminId) {
+    return prisma.recentUpdate.findMany({
+      where: { adminId },
+      take: 10,
+      orderBy: { createdAt: 'desc' }
+    });
   }
 
   async getStats(req, res, next) {
