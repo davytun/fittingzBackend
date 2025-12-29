@@ -2,6 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const { validationResult } = require("express-validator");
 const { getIO } = require("../socket");
 const { trackActivity, ActivityTypes } = require('../utils/activityTracker');
+const cache = require('../utils/cache');
 
 const prisma = new PrismaClient();
 
@@ -42,6 +43,13 @@ exports.createEvent = async (req, res, next) => {
       event.id,
       'Event'
     );
+
+    // Clear cache
+    await Promise.all([
+      cache.delPattern(`events:admin:${adminId}:*`),
+      cache.delPattern(`batch:${adminId}:*`),
+      cache.delPattern(`dashboard:${adminId}`)
+    ]);
 
     res.status(201).json(event);
     getIO().emit("event_created", event);
@@ -147,6 +155,12 @@ exports.updateEvent = async (req, res, next) => {
       }
     });
 
+    // Clear cache
+    await Promise.all([
+      cache.delPattern(`events:admin:${adminId}:*`),
+      cache.delPattern(`batch:${adminId}:*`)
+    ]);
+
     res.status(200).json(updatedEvent);
     getIO().emit("event_updated", updatedEvent);
   } catch (error) {
@@ -191,6 +205,13 @@ exports.deleteEvent = async (req, res, next) => {
     }
 
     await prisma.event.delete({ where: { id } });
+    
+    // Clear cache
+    await Promise.all([
+      cache.delPattern(`events:admin:${adminId}:*`),
+      cache.delPattern(`batch:${adminId}:*`)
+    ]);
+    
     res.status(200).json({ message: "Event deleted successfully" });
     getIO().emit("event_deleted", { id });
   } catch (error) {

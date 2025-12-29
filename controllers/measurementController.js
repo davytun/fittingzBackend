@@ -26,8 +26,13 @@ class MeasurementController {
       );
       
       // Clear related caches
-      await cache.delPattern(`measurements:client:${clientId}:*`);
-      await cache.delPattern(`client_details:${clientId}:*`);
+      await Promise.all([
+        cache.delPattern(`measurements:client:${clientId}:*`),
+        cache.delPattern(`client_details:${clientId}:*`),
+        cache.delPattern(`client:${clientId}:*`),
+        cache.delPattern(`batch:${adminId}:*`),
+        cache.delPattern(`dashboard:${adminId}`)
+      ]);
       
       res.status(201).json(measurement);
     } catch (error) {
@@ -84,6 +89,16 @@ class MeasurementController {
       const { name, fields, isDefault } = req.body;
       const adminId = req.user.id;
       const measurement = await MeasurementService.updateMeasurement({ id, name, fields, isDefault, adminId });
+      
+      // Clear related caches after update
+      const clientId = measurement.clientId;
+      await Promise.all([
+        cache.delPattern(`measurements:client:${clientId}:*`),
+        cache.delPattern(`client_details:${clientId}:*`),
+        cache.delPattern(`client:${clientId}:*`),
+        cache.delPattern(`batch:${adminId}:*`)
+      ]);
+      
       res.status(200).json(measurement);
     } catch (error) {
       if (error.message === 'Measurement not found') {

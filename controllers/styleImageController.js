@@ -52,8 +52,13 @@ exports.uploadStyleImage = async (req, res, next) => {
     });
     
     // Clear related caches
-    await cache.delPattern(`style_images:client:${clientId}:*`);
-    await cache.delPattern(`client_details:${clientId}:*`);
+    await Promise.all([
+      cache.delPattern(`style_images:client:${clientId}:*`),
+      cache.delPattern(`client_details:${clientId}:*`),
+      cache.delPattern(`client:${clientId}:*`),
+      cache.delPattern(`batch:${adminId}:*`),
+      cache.delPattern(`dashboard:${adminId}`)
+    ]);
     
     res.status(201).json(styleImages);
   } catch (error) {
@@ -215,6 +220,18 @@ exports.deleteStyleImage = async (req, res, next) => {
       imageId,
       adminId,
     });
+    
+    // Clear related caches
+    const clientId = result.clientId;
+    if (clientId) {
+      await Promise.all([
+        cache.delPattern(`style_images:client:${clientId}:*`),
+        cache.delPattern(`client_details:${clientId}:*`),
+        cache.delPattern(`client:${clientId}:*`),
+        cache.delPattern(`batch:${adminId}:*`)
+      ]);
+    }
+    
     res.status(200).json(result);
   } catch (error) {
     if (error.message === "Style image not found") {
@@ -255,6 +272,18 @@ exports.updateStyleImage = async (req, res, next) => {
       category,
       description,
     });
+    
+    // Clear related caches
+    const clientId = updatedStyleImage.clientId;
+    if (clientId) {
+      await Promise.all([
+        cache.delPattern(`style_images:client:${clientId}:*`),
+        cache.delPattern(`client_details:${clientId}:*`),
+        cache.delPattern(`client:${clientId}:*`),
+        cache.delPattern(`batch:${adminId}:*`)
+      ]);
+    }
+    
     res.status(200).json(updatedStyleImage);
   } catch (error) {
     if (error.message === "Style image not found") {

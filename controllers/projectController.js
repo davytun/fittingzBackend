@@ -110,8 +110,13 @@ exports.createProjectForClient = async (req, res, next) => {
     });
 
     // Clear cache
-    await cache.delPattern(`projects:admin:${adminId}:*`);
-    await cache.delPattern(`projects:client:${clientId}:*`);
+    await Promise.all([
+      cache.delPattern(`projects:admin:${adminId}:*`),
+      cache.delPattern(`projects:client:${clientId}:*`),
+      cache.delPattern(`client_details:${clientId}:*`),
+      cache.delPattern(`batch:${adminId}:*`),
+      cache.delPattern(`dashboard:${adminId}`)
+    ]);
 
     await trackActivity(
       adminId,
@@ -290,9 +295,13 @@ exports.updateProject = async (req, res, next) => {
       include: { client: { select: { name: true, id: true } } },
     });
     // Clear cache
-    await cache.delPattern(`projects:admin:${adminId}:*`);
-    await cache.delPattern(`projects:client:${updatedProject.clientId}:*`);
-    await cache.del(`project:${projectId}`);
+    await Promise.all([
+      cache.delPattern(`projects:admin:${adminId}:*`),
+      cache.delPattern(`projects:client:${updatedProject.clientId}:*`),
+      cache.delPattern(`client_details:${updatedProject.clientId}:*`),
+      cache.delPattern(`batch:${adminId}:*`),
+      cache.del(`project:${projectId}`)
+    ]);
 
     if (status && status !== existingProject.status) {
       await trackActivity(
@@ -339,9 +348,13 @@ exports.deleteProject = async (req, res, next) => {
     });
 
     // Clear cache
-    await cache.delPattern(`projects:admin:${adminId}:*`);
-    await cache.delPattern(`projects:client:${project.clientId}:*`);
-    await cache.del(`project:${projectId}`);
+    await Promise.all([
+      cache.delPattern(`projects:admin:${adminId}:*`),
+      cache.delPattern(`projects:client:${project.clientId}:*`),
+      cache.delPattern(`client_details:${project.clientId}:*`),
+      cache.delPattern(`batch:${adminId}:*`),
+      cache.del(`project:${projectId}`)
+    ]);
 
     res.status(200).json({ message: "Project deleted successfully" });
     getIO().emit("project_deleted", { id: projectId });

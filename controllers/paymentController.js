@@ -84,8 +84,13 @@ exports.addPayment = async (req, res, next) => {
     const actualTotal = updatedOrder.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
 
     // Clear cache
-    await cache.delPattern(`orders:admin:${adminId}:*`);
-    await cache.delPattern(`orders:client:${order.clientId}:*`);
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${order.clientId}:*`),
+      cache.delPattern(`client_details:${order.clientId}:*`),
+      cache.delPattern(`batch:${adminId}:*`),
+      cache.delPattern(`dashboard:${adminId}`)
+    ]);
 
     await trackActivity(
       adminId,
@@ -198,7 +203,12 @@ exports.createPayment = async (req, res, next) => {
       data: { deposit: newTotal }
     });
 
-    await cache.delPattern(`orders:admin:${adminId}:*`);
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${order.clientId}:*`),
+      cache.delPattern(`client_details:${order.clientId}:*`),
+      cache.delPattern(`batch:${adminId}:*`)
+    ]);
     await trackActivity(adminId, ActivityTypes.PAYMENT_RECEIVED, `Payment received: ${order.orderNumber}`, `Payment of ${amount} received`, payment.id, 'Payment');
 
     res.status(201).json({ message: "Payment created successfully", payment });
@@ -302,8 +312,12 @@ exports.deletePayment = async (req, res, next) => {
     });
 
     // Clear cache
-    await cache.delPattern(`orders:admin:${adminId}:*`);
-    await cache.delPattern(`orders:client:${payment.order.clientId}:*`);
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${payment.order.clientId}:*`),
+      cache.delPattern(`client_details:${payment.order.clientId}:*`),
+      cache.delPattern(`batch:${adminId}:*`)
+    ]);
 
     res.status(200).json({ message: "Payment deleted successfully" });
     getIO().emit("payment_deleted", { paymentId, orderId: payment.orderId });
