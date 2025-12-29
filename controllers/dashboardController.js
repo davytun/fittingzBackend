@@ -22,13 +22,11 @@ class DashboardController {
       if (list.includes('gallery')) queries.gallery = prisma.styleImage.findMany({ where: { adminId }, take: 50, orderBy: { createdAt: 'desc' } });
 
       // Add summary data
-      const [summaryData, recentClients, recentOrders, orderStats, recentUpdates] = await Promise.all([
-        this.getSummaryData(adminId),
-        this.getRecentClientsData(adminId),
-        this.getRecentOrdersData(adminId),
-        this.getOrderStatsData(adminId),
-        this.getRecentUpdatesData(adminId)
-      ]);
+      const summaryData = await this.getSummaryData(adminId);
+      const recentClients = await this.getRecentClientsData(adminId);
+      const recentOrders = await this.getRecentOrdersData(adminId);
+      const orderStats = await this.getOrderStatsData(adminId);
+      const recentUpdates = await this.getRecentUpdatesData(adminId);
 
       const result = {};
       await Promise.all(Object.entries(queries).map(async ([key, query]) => {
