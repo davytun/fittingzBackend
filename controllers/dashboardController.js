@@ -21,13 +21,42 @@ class DashboardController {
       if (list.includes('events')) queries.events = prisma.event.findMany({ where: { adminId }, take: 50, orderBy: { createdAt: 'desc' } });
       if (list.includes('gallery')) queries.gallery = prisma.styleImage.findMany({ where: { adminId }, take: 50, orderBy: { createdAt: 'desc' } });
 
-      // Add summary data
-      const dashboardController = this;
-      const summaryData = await dashboardController.getSummaryData(adminId);
-      const recentClients = await dashboardController.getRecentClientsData(adminId);
-      const recentOrders = await dashboardController.getRecentOrdersData(adminId);
-      const orderStats = await dashboardController.getOrderStatsData(adminId);
-      const recentUpdates = await dashboardController.getRecentUpdatesData(adminId);
+      // Add summary data inline
+      const [totalClients, totalOrders, totalRevenue] = await Promise.all([
+        prisma.client.count({ where: { adminId } }),
+        prisma.order.count({ where: { adminId } }),
+        prisma.order.aggregate({ where: { adminId }, _sum: { price: true } })
+      ]);
+      const summaryData = {
+        totalClients,
+        totalOrders,
+        totalRevenue: Number(totalRevenue._sum.price || 0)
+      };
+
+      const recentClients = await prisma.client.findMany({
+        where: { adminId },
+        take: 10,
+        orderBy: { createdAt: 'desc' }
+      });
+
+      const recentOrders = await prisma.order.findMany({
+        where: { adminId },
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: { client: { select: { name: true } }, payments: true }
+      });
+
+      const orderStats = await prisma.order.groupBy({
+        by: ['status'],
+        where: { adminId },
+        _count: { _all: true }
+      });
+
+      const recentUpdates = await prisma.recentUpdate.findMany({
+        where: { adminId },
+        take: 10,
+        orderBy: { createdAt: 'desc' }
+      });
 
       const result = {};
       await Promise.all(Object.entries(queries).map(async ([key, query]) => {
