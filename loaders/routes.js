@@ -10,7 +10,12 @@ const profileRoutes = require("../routes/profileRoutes");
 const recentUpdateRoutes = require("../routes/recentUpdateRoutes");
 const notificationRoutes = require("../routes/notificationRoutes");
 const dashboardRoutes = require("../routes/dashboardRoutes");
-const { generalApiLimiter, loginLimiter, registerLimiter, resendLimiter } = require("../middlewares/rateLimitMiddleware");
+const {
+  generalApiLimiter,
+  loginLimiter,
+  registerLimiter,
+  resendLimiter,
+} = require("../middlewares/rateLimitMiddleware");
 
 module.exports = (app) => {
   const isProduction = process.env.NODE_ENV === "production";
