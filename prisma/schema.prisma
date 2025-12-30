@@ -135,9 +135,11 @@ model Client {
 
 model Measurement {
   id        String   @id @default(cuid())
+  name      String?
   clientId  String
   orderId   String?
   fields    Json
+  isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -145,6 +147,7 @@ model Measurement {
 
   @@index([clientId])
   @@index([orderId])
+  @@index([isDefault])
 }
 
 model StyleImage {
@@ -261,6 +264,7 @@ enum NotificationType {
   ORDER_UPDATE
   PAYMENT_RECEIVED
   CLIENT_MESSAGE
+  CLIENT_ADDED
   SYSTEM_ALERT
   REMINDER
 }

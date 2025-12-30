@@ -43,8 +43,8 @@ class StyleImageService {
     }
 
     // Clear cache
-    await cache.delPattern(`styleImages:client:${clientId}:*`);
-    await cache.delPattern(`styleImages:admin:${adminId}:*`);
+    await cache.delPattern(`style_images:client:${clientId}:*`);
+    await cache.delPattern(`style_images:admin:${adminId}:*`);
 
     return styleImages;
   }
@@ -70,7 +70,7 @@ class StyleImageService {
     }
 
     // Clear cache
-    await cache.delPattern(`styleImages:admin:${adminId}:*`);
+    await cache.delPattern(`style_images:admin:${adminId}:*`);
 
     return styleImages;
   }
@@ -244,9 +244,9 @@ class StyleImageService {
 
     // Clear cache
     if (styleImage.clientId) {
-      await cache.delPattern(`styleImages:client:${styleImage.clientId}:*`);
+      await cache.delPattern(`style_images:client:${styleImage.clientId}:*`);
     }
-    await cache.delPattern(`styleImages:admin:${adminId}:*`);
+    await cache.delPattern(`style_images:admin:${adminId}:*`);
 
     return { message: "Style image deleted successfully" };
   }
@@ -290,9 +290,9 @@ class StyleImageService {
 
     // Clear cache
     if (styleImage.clientId) {
-      await cache.delPattern(`styleImages:client:${styleImage.clientId}:*`);
+      await cache.delPattern(`style_images:client:${styleImage.clientId}:*`);
     }
-    await cache.delPattern(`styleImages:admin:${adminId}:*`);
+    await cache.delPattern(`style_images:admin:${adminId}:*`);
 
     return updatedStyleImage;
   }
@@ -356,7 +356,7 @@ class StyleImageService {
       }
     }
     for (const clientId of clientIds) {
-      await cache.delPattern(`styleImages:client:${clientId}:*`);
+      await cache.delPattern(`style_images:client:${clientId}:*`);
     }
 
     return { deletedCount, failedCount, failedImages };

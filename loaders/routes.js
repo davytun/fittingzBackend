@@ -21,13 +21,17 @@ module.exports = (app) => {
   const isProduction = process.env.NODE_ENV === "production";
 
   // Apply rate limiting to all auth routes for security
-  app.use(
-    "/api/v1/auth",
-    loginLimiter,
-    registerLimiter,
-    resendLimiter,
-    authRoutes
-  );
+  if (isProduction) {
+    app.use(
+      "/api/v1/auth",
+      loginLimiter,
+      registerLimiter,
+      resendLimiter,
+      authRoutes
+    );
+  } else {
+    app.use("/api/v1/auth", authRoutes);
+  }
 
   if (isProduction) {
     app.use("/api/v1/dashboard", generalApiLimiter, dashboardRoutes);
