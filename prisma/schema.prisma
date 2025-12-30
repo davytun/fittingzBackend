@@ -67,6 +67,7 @@ model Order {
   currency         String            @default("NGN")
   dueDate          DateTime?
   status           OrderStatus       @default(PENDING_PAYMENT)
+  note             String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   clientId         String
@@ -82,6 +83,7 @@ model Order {
   project          Project?          @relation(fields: [projectId], references: [id])
   styleImages      OrderStyleImage[]
   payments         Payment[]
+  measurements     Measurement[]
 
   @@index([clientId])
   @@index([adminId])
@@ -109,6 +111,7 @@ model Client {
   name              String
   phone             String?
   email             String?
+  gender            String?
   eventType         String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -131,12 +134,15 @@ model Client {
 model Measurement {
   id        String   @id @default(cuid())
   clientId  String   @unique
+  orderId   String?
   fields    Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  order     Order?   @relation(fields: [orderId], references: [id])
 
   @@index([clientId])
+  @@index([orderId])
 }
 
 model StyleImage {
