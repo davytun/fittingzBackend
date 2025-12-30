@@ -110,13 +110,7 @@ class ClientService {
         createdAt: true,
         updatedAt: true,
         measurements: {
-          select: {
-            id: true,
-            name: true,
-            fields: true,
-            createdAt: true,
-            updatedAt: true,
-          },
+          select: { id: true },
         },
         styleImages: {
           select: {
@@ -140,7 +134,7 @@ class ClientService {
           take: 3,
         },
         _count: {
-          select: { measurements: true, styleImages: true },
+          select: { measurements: true, styleImages: true, Order: true },
         },
       },
     });

@@ -1,6 +1,9 @@
 const rateLimit = require("express-rate-limit");
 
-const loginLimiter = rateLimit({
+// Disable rate limiting in development
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+const loginLimiter = isDevelopment ? (req, res, next) => next() : rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
   standardHeaders: true,
@@ -11,7 +14,7 @@ const loginLimiter = rateLimit({
   },
 });
 
-const registerLimiter = rateLimit({
+const registerLimiter = isDevelopment ? (req, res, next) => next() : rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
@@ -22,7 +25,7 @@ const registerLimiter = rateLimit({
   },
 });
 
-const resendLimiter = rateLimit({
+const resendLimiter = isDevelopment ? (req, res, next) => next() : rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   standardHeaders: true,
@@ -33,7 +36,7 @@ const resendLimiter = rateLimit({
   },
 });
 
-const createClientLimiter = rateLimit({
+const createClientLimiter = isDevelopment ? (req, res, next) => next() : rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   standardHeaders: true,
@@ -44,7 +47,7 @@ const createClientLimiter = rateLimit({
   },
 });
 
-const measurementLimiter = rateLimit({
+const measurementLimiter = isDevelopment ? (req, res, next) => next() : rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   standardHeaders: true,
@@ -55,7 +58,7 @@ const measurementLimiter = rateLimit({
   },
 });
 
-const createOrderLimiter = rateLimit({
+const createOrderLimiter = isDevelopment ? (req, res, next) => next() : rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
   standardHeaders: true,
@@ -66,9 +69,9 @@ const createOrderLimiter = rateLimit({
   },
 });
 
-const generalApiLimiter = rateLimit({
-  windowMs: process.env.NODE_ENV === 'development' ? 1 * 60 * 1000 : 15 * 60 * 1000, // 1 min in dev, 15 min in prod
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // 1000 in dev, 100 in prod
+const generalApiLimiter = isDevelopment ? (req, res, next) => next() : rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

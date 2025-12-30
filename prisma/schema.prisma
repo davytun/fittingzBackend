@@ -23,6 +23,8 @@ model Admin {
   Project            Project[]
   styleImages        StyleImage[]
   verificationTokens VerificationToken[]
+  notifications      Notification[]
+  recentUpdates      RecentUpdate[]
 }
 
 model VerificationToken {
@@ -123,7 +125,7 @@ model Client {
   preferredStyles   String[]      @default([])
   admin             Admin         @relation(fields: [adminId], references: [id])
   events            EventClient[]
-  measurements      Measurement?
+  measurements      Measurement[]
   Order             Order[]
   Project           Project[]
   styleImages       StyleImage[]
@@ -133,7 +135,7 @@ model Client {
 
 model Measurement {
   id        String   @id @default(cuid())
-  clientId  String   @unique
+  clientId  String
   orderId   String?
   fields    Json
   createdAt DateTime @default(now())
@@ -218,6 +220,56 @@ enum ProjectStatus {
   COMPLETED
   ON_HOLD
   CANCELLED
+}
+
+model RecentUpdate {
+  id          String   @id @default(cuid())
+  adminId     String
+  type        String
+  title       String
+  description String?
+  entityId    String?
+  entityType  String?
+  createdAt   DateTime @default(now())
+  admin       Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id         String              @id @default(cuid())
+  adminId    String
+  type       NotificationType
+  priority   NotificationPriority @default(MEDIUM)
+  title      String
+  message    String
+  isRead     Boolean             @default(false)
+  entityId   String?
+  entityType String?
+  actionUrl  String?
+  createdAt  DateTime            @default(now())
+  readAt     DateTime?
+  admin      Admin               @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  ORDER_UPDATE
+  PAYMENT_RECEIVED
+  CLIENT_MESSAGE
+  SYSTEM_ALERT
+  REMINDER
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 enum OrderStatus {
