@@ -8,25 +8,21 @@ datasource db {
 }
 
 model Admin {
-  id                   String              @id @default(cuid())
-  email                String              @unique
-  password             String
-  businessName         String
-  contactPhone         String?
-  businessAddress      String?
-  profileImageUrl      String?
-  profileImagePublicId String?
-  isEmailVerified      Boolean             @default(false)
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
-  clients              Client[]
-  Event                Event[]
-  Order                Order[]
-  Project              Project[]
-  styleImages          StyleImage[]
-  verificationTokens   VerificationToken[]
-  recentUpdates        RecentUpdate[]
-  notifications        Notification[]
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  password           String
+  businessName       String
+  contactPhone       String?
+  businessAddress    String?
+  isEmailVerified    Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  clients            Client[]
+  Event              Event[]
+  Order              Order[]
+  Project            Project[]
+  styleImages        StyleImage[]
+  verificationTokens VerificationToken[]
 }
 
 model VerificationToken {
@@ -67,21 +63,19 @@ model Project {
 model Order {
   id               String            @id @default(cuid())
   orderNumber      String
-  details          Json?
   price            Decimal           @db.Decimal(10, 2)
   currency         String            @default("NGN")
   dueDate          DateTime?
   status           OrderStatus       @default(PENDING_PAYMENT)
-  deposit          Decimal?          @db.Decimal(10, 2)
-  styleDescription String?
-  note             String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   clientId         String
   adminId          String
   projectId        String?
+  deposit          Decimal?          @db.Decimal(10, 2)
+  styleDescription String?
   eventId          String?
-  measurements     Measurement[]
+  details          Json?
   admin            Admin             @relation(fields: [adminId], references: [id], onDelete: Cascade)
   client           Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
   event            Event?            @relation(fields: [eventId], references: [id])
@@ -115,18 +109,18 @@ model Client {
   name              String
   phone             String?
   email             String?
-  gender            String?
-  favoriteColors    String[]      @default([])
-  dislikedColors    String[]      @default([])
-  preferredStyles   String[]      @default([])
-  bodyShape         String?
-  additionalDetails String?
+  eventType         String?
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
   adminId           String
+  additionalDetails String?
+  bodyShape         String?
+  dislikedColors    String[]      @default([])
+  favoriteColors    String[]      @default([])
+  preferredStyles   String[]      @default([])
   admin             Admin         @relation(fields: [adminId], references: [id])
   events            EventClient[]
-  measurements      Measurement[]
+  measurements      Measurement?
   Order             Order[]
   Project           Project[]
   styleImages       StyleImage[]
@@ -136,19 +130,13 @@ model Client {
 
 model Measurement {
   id        String   @id @default(cuid())
-  clientId  String
-  orderId   String?
-  name      String?
+  clientId  String   @unique
   fields    Json
-  isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([clientId])
-  @@index([orderId])
-  @@index([clientId, isDefault])
 }
 
 model StyleImage {
@@ -213,41 +201,6 @@ model Payment {
   @@index([orderId])
 }
 
-model RecentUpdate {
-  id          String       @id @default(cuid())
-  type        ActivityType
-  title       String
-  description String?
-  entityId    String
-  entityType  String
-  adminId     String
-  createdAt   DateTime     @default(now())
-  admin       Admin        @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@index([adminId, createdAt(sort: Desc)])
-  @@index([type])
-}
-
-model Notification {
-  id         String               @id @default(cuid())
-  type       NotificationType
-  priority   NotificationPriority @default(MEDIUM)
-  title      String
-  message    String
-  isRead     Boolean              @default(false)
-  entityId   String?
-  entityType String?
-  actionUrl  String?
-  adminId    String
-  createdAt  DateTime             @default(now())
-  readAt     DateTime?
-  admin      Admin                @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@index([adminId, isRead, createdAt(sort: Desc)])
-  @@index([adminId, createdAt(sort: Desc)])
-  @@index([type])
-}
-
 enum TokenType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
@@ -269,31 +222,4 @@ enum OrderStatus {
   DELIVERED
   COMPLETED
   CANCELLED
-}
-
-enum ActivityType {
-  CLIENT_CREATED
-  ORDER_CREATED
-  ORDER_STATUS_CHANGED
-  PROJECT_CREATED
-  PROJECT_STATUS_CHANGED
-  PAYMENT_RECEIVED
-  EVENT_CREATED
-  MEASUREMENT_ADDED
-}
-
-enum NotificationType {
-  ORDER_STATUS
-  PAYMENT_RECEIVED
-  CLIENT_ADDED
-  PROJECT_UPDATE
-  SYSTEM_ALERT
-  REMINDER
-}
-
-enum NotificationPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
 }
