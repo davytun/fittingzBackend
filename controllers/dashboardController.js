@@ -5,71 +5,148 @@ const prisma = new PrismaClient();
 class DashboardController {
   async getBatchData(req, res, next) {
     const adminId = req.user.id;
-    const { entities = 'clients,orders,projects,events,gallery' } = req.query;
+    const { entities = "clients,orders,projects,events,gallery" } = req.query;
     const cacheKey = `batch:${adminId}:${entities}`;
 
     try {
       const cached = await cache.get(cacheKey);
       if (cached) return res.json(cached);
 
-      const list = entities.split(',');
-      const queries = {};
-      
-      if (list.includes('clients')) queries.clients = prisma.client.findMany({ where: { adminId }, take: 50, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, email: true, phone: true, createdAt: true } });
-      if (list.includes('orders')) queries.orders = prisma.order.findMany({ where: { adminId }, take: 50, orderBy: { createdAt: 'desc' }, include: { client: { select: { name: true } } } });
-      if (list.includes('projects')) queries.projects = prisma.project.findMany({ where: { adminId }, take: 50, orderBy: { createdAt: 'desc' } });
-      if (list.includes('events')) queries.events = prisma.event.findMany({ where: { adminId }, take: 50, orderBy: { createdAt: 'desc' } });
-      if (list.includes('gallery')) queries.gallery = prisma.styleImage.findMany({ where: { adminId }, take: 50, orderBy: { createdAt: 'desc' } });
+      const list = entities.split(",");
 
-      // Add summary data inline
-      const [totalClients, totalOrders, totalRevenue] = await Promise.all([
-        prisma.client.count({ where: { adminId } }),
-        prisma.order.count({ where: { adminId } }),
-        prisma.order.aggregate({ where: { adminId }, _sum: { price: true } })
+      // Execute all queries in parallel to minimize round trips
+      const [
+        summary,
+        clients,
+        orders,
+        projects,
+        events,
+        gallery,
+        orderStats,
+        recentUpdates,
+      ] = await Promise.all([
+        // Summary data: single aggregation query
+        prisma.order
+          .aggregate({
+            where: { adminId },
+            _sum: { price: true },
+            _count: { _all: true },
+          })
+          .then((agg) => ({
+            totalOrders: agg._count._all,
+            totalRevenue: Number(agg._sum.price || 0),
+          })),
+
+        // Clients query with minimal fields
+        list.includes("clients")
+          ? prisma.client.findMany({
+              where: { adminId },
+              take: 50,
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                createdAt: true,
+              },
+            })
+          : Promise.resolve([]),
+
+        // Orders with client names only
+        list.includes("orders")
+          ? prisma.order.findMany({
+              where: { adminId },
+              take: 10,
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+                price: true,
+                createdAt: true,
+                client: { select: { name: true } },
+              },
+            })
+          : Promise.resolve([]),
+
+        // Projects
+        list.includes("projects")
+          ? prisma.project.findMany({
+              where: { adminId },
+              take: 50,
+              orderBy: { createdAt: "desc" },
+              select: { id: true, name: true, status: true, createdAt: true },
+            })
+          : Promise.resolve([]),
+
+        // Events
+        list.includes("events")
+          ? prisma.event.findMany({
+              where: { adminId },
+              take: 50,
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                name: true,
+                eventDate: true,
+                createdAt: true,
+              },
+            })
+          : Promise.resolve([]),
+
+        // Gallery
+        list.includes("gallery")
+          ? prisma.styleImage.findMany({
+              where: { adminId },
+              take: 50,
+              orderBy: { createdAt: "desc" },
+              select: {
+                id: true,
+                imageUrl: true,
+                category: true,
+                createdAt: true,
+              },
+            })
+          : Promise.resolve([]),
+
+        // Order statistics
+        prisma.order.groupBy({
+          by: ["status"],
+          where: { adminId },
+          _count: { _all: true },
+        }),
+
+        // Recent updates
+        prisma.recentUpdate.findMany({
+          where: { adminId },
+          take: 10,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            description: true,
+            createdAt: true,
+          },
+        }),
       ]);
-      const summaryData = {
-        totalClients,
-        totalOrders,
-        totalRevenue: Number(totalRevenue._sum.price || 0)
-      };
 
-      const recentClients = await prisma.client.findMany({
-        where: { adminId },
-        take: 10,
-        orderBy: { createdAt: 'desc' }
-      });
-
-      const recentOrders = await prisma.order.findMany({
-        where: { adminId },
-        take: 10,
-        orderBy: { createdAt: 'desc' },
-        include: { client: { select: { name: true } }, payments: true }
-      });
-
-      const orderStats = await prisma.order.groupBy({
-        by: ['status'],
-        where: { adminId },
-        _count: { _all: true }
-      });
-
-      const recentUpdates = await prisma.recentUpdate.findMany({
-        where: { adminId },
-        take: 10,
-        orderBy: { createdAt: 'desc' }
-      });
+      // Get total clients count separately (needed for summary)
+      const totalClients = await prisma.client.count({ where: { adminId } });
 
       const result = {};
-      await Promise.all(Object.entries(queries).map(async ([key, query]) => {
-        result[key] = await query;
-      }));
+      if (list.includes("clients")) result.clients = clients;
+      if (list.includes("orders")) result.orders = orders;
+      if (list.includes("projects")) result.projects = projects;
+      if (list.includes("events")) result.events = events;
+      if (list.includes("gallery")) result.gallery = gallery;
 
-      // Add the additional data you requested
-      result.summary = summaryData;
-      result.recentClients = recentClients;
-      result.recentOrders = recentOrders;
+      result.summary = { ...summary, totalClients };
       result.orderStats = orderStats;
       result.recentUpdates = recentUpdates;
 
+      // Cache for 5 minutes
       await cache.set(cacheKey, result, 300);
       res.json(result);
     } catch (error) {
@@ -77,18 +154,16 @@ class DashboardController {
     }
   }
 
-
-
   async getSummaryData(adminId) {
     const [totalClients, totalOrders, totalRevenue] = await Promise.all([
       prisma.client.count({ where: { adminId } }),
       prisma.order.count({ where: { adminId } }),
-      prisma.order.aggregate({ where: { adminId }, _sum: { price: true } })
+      prisma.order.aggregate({ where: { adminId }, _sum: { price: true } }),
     ]);
     return {
       totalClients,
       totalOrders,
-      totalRevenue: Number(totalRevenue._sum.price || 0)
+      totalRevenue: Number(totalRevenue._sum.price || 0),
     };
   }
 
@@ -96,12 +171,24 @@ class DashboardController {
     return prisma.client.findMany({
       where: { adminId },
       take: 10,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
-        measurements: { select: { id: true, fields: true, createdAt: true, updatedAt: true } },
-        styleImages: { select: { id: true, imageUrl: true, publicId: true, category: true, description: true, createdAt: true, updatedAt: true } },
-        _count: { select: { measurements: true, styleImages: true } }
-      }
+        measurements: {
+          select: { id: true, fields: true, createdAt: true, updatedAt: true },
+        },
+        styleImages: {
+          select: {
+            id: true,
+            imageUrl: true,
+            publicId: true,
+            category: true,
+            description: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        _count: { select: { measurements: true, styleImages: true } },
+      },
     });
   }
 
@@ -109,19 +196,33 @@ class DashboardController {
     const orders = await prisma.order.findMany({
       where: { adminId },
       take: 10,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         client: { select: { id: true, name: true } },
-        payments: { select: { id: true, amount: true, paymentDate: true, notes: true } },
-        styleImages: { include: { styleImage: { select: { id: true, imageUrl: true, description: true } } } },
+        payments: {
+          select: { id: true, amount: true, paymentDate: true, notes: true },
+        },
+        styleImages: {
+          include: {
+            styleImage: {
+              select: { id: true, imageUrl: true, description: true },
+            },
+          },
+        },
         project: { select: { name: true } },
         event: { select: { name: true } },
-        measurements: { select: { id: true, name: true, fields: true }, take: 1 }
-      }
+        measurements: {
+          select: { id: true, name: true, fields: true },
+          take: 1,
+        },
+      },
     });
 
-    return orders.map(order => {
-      const totalPaid = order.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    return orders.map((order) => {
+      const totalPaid = order.payments.reduce(
+        (sum, payment) => sum + Number(payment.amount),
+        0
+      );
       const outstandingBalance = Number(order.price) - totalPaid;
       return {
         ...order,
@@ -130,29 +231,33 @@ class DashboardController {
         totalPaid,
         outstandingBalance,
         outstandingAmount: outstandingBalance,
-        measurement: order.measurements[0] || null
+        measurement: order.measurements[0] || null,
       };
     });
   }
 
   async getOrderStatsData(adminId) {
-    return prisma.order.groupBy({
-      by: ['status'],
-      where: { adminId },
-      _count: { _all: true },
-      _sum: { price: true }
-    }).then(stats => stats.map(stat => ({
-      status: stat.status,
-      _count: { _all: stat._count._all },
-      _sum: { price: Number(stat._sum.price || 0) }
-    })));
+    return prisma.order
+      .groupBy({
+        by: ["status"],
+        where: { adminId },
+        _count: { _all: true },
+        _sum: { price: true },
+      })
+      .then((stats) =>
+        stats.map((stat) => ({
+          status: stat.status,
+          _count: { _all: stat._count._all },
+          _sum: { price: Number(stat._sum.price || 0) },
+        }))
+      );
   }
 
   async getRecentUpdatesData(adminId) {
     return prisma.recentUpdate.findMany({
       where: { adminId },
       take: 10,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -164,14 +269,15 @@ class DashboardController {
       const cached = await cache.get(cacheKey);
       if (cached) return res.json(cached);
 
-      const [clients, orders, projects, events, gallery, pending] = await Promise.all([
-        prisma.client.count({ where: { adminId } }),
-        prisma.order.count({ where: { adminId } }),
-        prisma.project.count({ where: { adminId } }),
-        prisma.event.count({ where: { adminId } }),
-        prisma.styleImage.count({ where: { adminId } }),
-        prisma.order.count({ where: { adminId, status: "PENDING_PAYMENT" } })
-      ]);
+      const [clients, orders, projects, events, gallery, pending] =
+        await Promise.all([
+          prisma.client.count({ where: { adminId } }),
+          prisma.order.count({ where: { adminId } }),
+          prisma.project.count({ where: { adminId } }),
+          prisma.event.count({ where: { adminId } }),
+          prisma.styleImage.count({ where: { adminId } }),
+          prisma.order.count({ where: { adminId, status: "PENDING_PAYMENT" } }),
+        ]);
 
       const stats = { clients, orders, projects, events, gallery, pending };
       await cache.set(cacheKey, stats, 180);
@@ -192,24 +298,24 @@ class DashboardController {
 
       const [client, orders, measurements, styleImages] = await Promise.all([
         prisma.client.findUnique({
-          where: { id: clientId, adminId }
+          where: { id: clientId, adminId },
         }),
         prisma.order.findMany({
           where: { clientId, adminId },
-          orderBy: { createdAt: 'desc' },
-          include: { payments: true }
+          orderBy: { createdAt: "desc" },
+          include: { payments: true },
         }),
         prisma.measurement.findMany({
           where: { clientId },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: "desc" },
         }),
         prisma.styleImage.findMany({
           where: { clientId },
-          orderBy: { createdAt: 'desc' }
-        })
+          orderBy: { createdAt: "desc" },
+        }),
       ]);
 
-      if (!client) return res.status(404).json({ error: 'Client not found' });
+      if (!client) return res.status(404).json({ error: "Client not found" });
 
       const result = { client, orders, measurements, styleImages };
       await cache.set(cacheKey, result, 300);

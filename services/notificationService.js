@@ -1,5 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
-const { getIO } = require('../socket');
+const { PrismaClient } = require("@prisma/client");
+const { getIO } = require("../socket");
 const prisma = new PrismaClient();
 
 class NotificationService {
@@ -10,15 +10,15 @@ class NotificationService {
         type,
         title,
         message,
-        priority: options.priority || 'MEDIUM',
+        priority: options.priority || "MEDIUM",
         entityId: options.entityId,
         entityType: options.entityType,
-        actionUrl: options.actionUrl
-      }
+        actionUrl: options.actionUrl,
+      },
     });
 
     // Emit real-time notification
-    getIO().to(`admin_${adminId}`).emit('new_notification', notification);
+    getIO().to(`admin_${adminId}`).emit("new_notification", notification);
 
     return notification;
   }
@@ -32,23 +32,33 @@ class NotificationService {
     const where = {
       adminId,
       ...(unreadOnly && { isRead: false }),
-      ...(type && { type })
+      ...(type && { type }),
     };
 
     const [notifications, total, unreadCount] = await Promise.all([
       prisma.notification.findMany({
         where,
-        orderBy: [
-          { priority: 'desc' },
-          { createdAt: 'desc' }
-        ],
+        orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+        select: {
+          id: true,
+          type: true,
+          priority: true,
+          title: true,
+          message: true,
+          isRead: true,
+          entityId: true,
+          entityType: true,
+          actionUrl: true,
+          createdAt: true,
+          readAt: true,
+        },
         skip,
-        take: validLimit
+        take: validLimit,
       }),
       prisma.notification.count({ where }),
       prisma.notification.count({
-        where: { adminId, isRead: false }
-      })
+        where: { adminId, isRead: false },
+      }),
     ]);
 
     return {
@@ -57,27 +67,27 @@ class NotificationService {
         page: validPage,
         limit: validLimit,
         total,
-        totalPages: Math.ceil(total / validLimit)
+        totalPages: Math.ceil(total / validLimit),
       },
-      unreadCount
+      unreadCount,
     };
   }
 
   async markAsRead(adminId, notificationId) {
     const notification = await prisma.notification.findFirst({
-      where: { id: notificationId, adminId }
+      where: { id: notificationId, adminId },
     });
 
     if (!notification) {
-      throw new Error('Notification not found');
+      throw new Error("Notification not found");
     }
 
     return await prisma.notification.update({
       where: { id: notificationId },
       data: {
         isRead: true,
-        readAt: new Date()
-      }
+        readAt: new Date(),
+      },
     });
   }
 
@@ -86,28 +96,28 @@ class NotificationService {
       where: { adminId, isRead: false },
       data: {
         isRead: true,
-        readAt: new Date()
-      }
+        readAt: new Date(),
+      },
     });
   }
 
   async deleteNotification(adminId, notificationId) {
     const notification = await prisma.notification.findFirst({
-      where: { id: notificationId, adminId }
+      where: { id: notificationId, adminId },
     });
 
     if (!notification) {
-      throw new Error('Notification not found');
+      throw new Error("Notification not found");
     }
 
     return await prisma.notification.delete({
-      where: { id: notificationId }
+      where: { id: notificationId },
     });
   }
 
   async getUnreadCount(adminId) {
     return await prisma.notification.count({
-      where: { adminId, isRead: false }
+      where: { adminId, isRead: false },
     });
   }
 
@@ -119,8 +129,8 @@ class NotificationService {
       where: {
         adminId,
         isRead: true,
-        createdAt: { lt: cutoffDate }
-      }
+        createdAt: { lt: cutoffDate },
+      },
     });
   }
 }
