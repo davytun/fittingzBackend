@@ -44,7 +44,7 @@ const validateStyleImageInput = [
 router.get("/admin/styles", styleImageController.getStyleImagesByAdmin);
 router.post(
   "/admin/styles/upload",
-  upload.any(),
+  upload.array('images', 20),
   validateStyleImageInput,
   styleImageController.uploadStyleImageForAdmin
 );
@@ -55,7 +55,7 @@ router.post("/admin/styles/delete-multiple", styleImageController.deleteMultiple
 router.post(
   "/:clientId/styles/upload",
   validateClientIdInParam,
-  upload.any(),
+  upload.array('images', 20),
   validateStyleImageInput,
   styleImageController.uploadStyleImage
 );
