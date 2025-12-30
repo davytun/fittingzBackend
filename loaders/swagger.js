@@ -1,8 +1,18 @@
-const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('../config/swaggerConfig');
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("../config/swaggerConfig");
+const { authenticateJwt } = require("../middlewares/authMiddleware");
 
 module.exports = (app) => {
-    app.use("/api/v1/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  // Protect Swagger docs with JWT authentication in production
+  const isProduction = process.env.NODE_ENV === "production";
+  const swaggerMiddleware = isProduction ? [authenticateJwt] : [];
 
-    return app;
+  app.use(
+    "/api/v1/docs",
+    ...swaggerMiddleware,
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec)
+  );
+
+  return app;
 };

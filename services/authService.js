@@ -37,8 +37,8 @@ class AdminService {
       },
     });
 
-    // Generate email verification token (4-digit code)
-    const verificationCode = crypto.randomInt(1000, 9999).toString();
+    // Generate email verification token (32 bytes hex)
+    const verificationCode = crypto.randomBytes(32).toString("hex");
     const hashedVerificationCode = await bcrypt.hash(verificationCode, 10);
     const tokenExpiresIn = 15 * 60 * 1000; // 15 minutes
 
@@ -116,8 +116,8 @@ class AdminService {
       },
     });
 
-    // Generate new verification token
-    const verificationCode = crypto.randomInt(1000, 9999).toString();
+    // Generate new verification token (32 bytes hex)
+    const verificationCode = crypto.randomBytes(32).toString("hex");
     const hashedVerificationCode = await bcrypt.hash(verificationCode, 10);
     const tokenExpiresIn = 15 * 60 * 1000; // 15 minutes
 
@@ -174,9 +174,7 @@ class AdminService {
     });
 
     if (!verificationTokenRecord) {
-      throw new Error(
-        "No verification code found. Please request a new one."
-      );
+      throw new Error("No verification code found. Please request a new one.");
     }
 
     const isTokenExpired =
@@ -248,9 +246,7 @@ class AdminService {
     }
 
     if (!admin.isEmailVerified) {
-      throw new Error(
-        "Please verify your email before logging in"
-      );
+      throw new Error("Please verify your email before logging in");
     }
 
     // Generate tokens
@@ -274,7 +270,7 @@ class AdminService {
   async refreshToken(refreshToken) {
     try {
       const decoded = JWTUtils.verifyRefreshToken(refreshToken);
-      
+
       // Get admin data
       const admin = await prisma.admin.findUnique({
         where: { id: decoded.id },
@@ -352,14 +348,11 @@ class AdminService {
       await sendEmail(admin.email, emailSubject, emailText, emailHtml);
     } catch (emailError) {
       console.error("Failed to send password reset email:", emailError);
-      throw new Error(
-        "We couldn't send your reset code. Please try again."
-      );
+      throw new Error("We couldn't send your reset code. Please try again.");
     }
 
     return {
-      message:
-        "Reset code sent to your email. Please check your inbox.",
+      message: "Reset code sent to your email. Please check your inbox.",
     };
   }
 
@@ -388,15 +381,10 @@ class AdminService {
       await prisma.verificationToken.delete({
         where: { id: resetTokenRecord.id },
       });
-      throw new Error(
-        "Your reset code has expired. Please request a new one."
-      );
+      throw new Error("Your reset code has expired. Please request a new one.");
     }
 
-    const isCodeMatch = await bcrypt.compare(
-      resetCode,
-      resetTokenRecord.token
-    );
+    const isCodeMatch = await bcrypt.compare(resetCode, resetTokenRecord.token);
     if (!isCodeMatch) {
       throw new Error("Invalid reset code. Please check and try again.");
     }
@@ -432,15 +420,10 @@ class AdminService {
       await prisma.verificationToken.delete({
         where: { id: resetTokenRecord.id },
       });
-      throw new Error(
-        "Your reset code has expired. Please request a new one."
-      );
+      throw new Error("Your reset code has expired. Please request a new one.");
     }
 
-    const isCodeMatch = await bcrypt.compare(
-      resetCode,
-      resetTokenRecord.token
-    );
+    const isCodeMatch = await bcrypt.compare(resetCode, resetTokenRecord.token);
     if (!isCodeMatch) {
       throw new Error("Invalid reset code. Please check and try again.");
     }
@@ -483,8 +466,7 @@ class AdminService {
     }
 
     return {
-      message:
-        "Password updated successfully. You can now log in.",
+      message: "Password updated successfully. You can now log in.",
     };
   }
 
@@ -495,7 +477,10 @@ class AdminService {
     }
 
     // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, admin.password);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      admin.password
+    );
     if (!isCurrentPasswordValid) {
       throw new Error("Current password is incorrect.");
     }
@@ -503,7 +488,9 @@ class AdminService {
     // Check if new password is same as current password
     const isSamePassword = await bcrypt.compare(newPassword, admin.password);
     if (isSamePassword) {
-      throw new Error("New password must be different from your current password.");
+      throw new Error(
+        "New password must be different from your current password."
+      );
     }
 
     // Hash new password

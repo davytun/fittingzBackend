@@ -10,13 +10,20 @@ const profileRoutes = require("../routes/profileRoutes");
 const recentUpdateRoutes = require("../routes/recentUpdateRoutes");
 const notificationRoutes = require("../routes/notificationRoutes");
 const dashboardRoutes = require("../routes/dashboardRoutes");
-const { generalApiLimiter } = require("../middlewares/rateLimitMiddleware");
+const { generalApiLimiter, loginLimiter, registerLimiter, resendLimiter } = require("../middlewares/rateLimitMiddleware");
 
 module.exports = (app) => {
-  const isProduction = process.env.NODE_ENV === 'production';
-  
-  app.use("/api/v1/auth", authRoutes);
-  
+  const isProduction = process.env.NODE_ENV === "production";
+
+  // Apply rate limiting to all auth routes for security
+  app.use(
+    "/api/v1/auth",
+    loginLimiter,
+    registerLimiter,
+    resendLimiter,
+    authRoutes
+  );
+
   if (isProduction) {
     app.use("/api/v1/dashboard", generalApiLimiter, dashboardRoutes);
     app.use("/api/v1/profile", generalApiLimiter, profileRoutes);
@@ -44,7 +51,7 @@ module.exports = (app) => {
     app.use("/api/v1/recent-updates", recentUpdateRoutes);
     app.use("/api/v1/notifications", notificationRoutes);
   }
-  
+
   app.use("/test", require("../routes/health"));
 
   return app;

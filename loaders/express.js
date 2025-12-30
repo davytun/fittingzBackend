@@ -15,8 +15,7 @@ module.exports = (app) => {
     .map((origin) => origin.trim());
 
   // Toggle full access in dev/test
-  const isDevOrTesting =
-    process.env.NODE_ENV !== "production" || process.env.OPEN_CORS === "true";
+  const isDevOrTesting = process.env.NODE_ENV !== "production";
 
   // Shared CORS config
   const commonCorsConfig = {
@@ -45,10 +44,10 @@ module.exports = (app) => {
 
   // CORS must come before Helmet
   app.use(cors(corsOptions));
-  
+
   // Performance monitoring
   app.use(performanceMonitor);
-  
+
   // Security & performance middlewares
   app.use(helmet({ crossOriginResourcePolicy: false }));
   app.use(compression({ level: 1 }));

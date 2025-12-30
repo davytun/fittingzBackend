@@ -67,8 +67,7 @@ const { setIO } = require("./socket");
 const allowedOrigin =
   process.env.CORS_ALLOWED_ORIGIN || "http://localhost:8080";
 const allowedOrigins = allowedOrigin.split(",").map((origin) => origin.trim());
-const isDevOrTesting =
-  process.env.NODE_ENV !== "production" || process.env.OPEN_CORS === "true";
+const isDevOrTesting = process.env.NODE_ENV !== "production";
 
 const io = new Server(server, {
   // Make CORS permissive in dev or accept configured origins in prod
