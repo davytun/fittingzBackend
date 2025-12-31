@@ -79,6 +79,8 @@ class MeasurementService {
 
     // Clear cache for client's measurements
     await cache.del(`measurements:${clientId}`);
+    await cache.del(`client:${clientId}`);
+    await cache.delPattern(`clients:${adminId}:*`);
 
     // Emit Socket.IO event
     getIO().emit("measurement_created", measurement);

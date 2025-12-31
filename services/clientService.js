@@ -110,7 +110,15 @@ class ClientService {
         createdAt: true,
         updatedAt: true,
         measurements: {
-          select: { id: true },
+          select: {
+            id: true,
+            name: true,
+            fields: true,
+            isDefault: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+          orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
         },
         styleImages: {
           select: {

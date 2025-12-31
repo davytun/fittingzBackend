@@ -26,6 +26,9 @@ model Admin {
   verificationTokens VerificationToken[]
   notifications      Notification[]
   recentUpdates      RecentUpdate[]
+
+  @@index([email])
+  @@index([createdAt])
 }
 
 model VerificationToken {
@@ -94,6 +97,10 @@ model Order {
   @@index([eventId])
   @@index([status])
   @@index([orderNumber])
+  @@index([createdAt])
+  @@index([dueDate])
+  @@index([adminId, status])
+  @@index([clientId, status])
 }
 
 model OrderStyleImage {
@@ -132,6 +139,10 @@ model Client {
   styleImages       StyleImage[]
 
   @@index([adminId])
+  @@index([name])
+  @@index([email])
+  @@index([phone])
+  @@index([createdAt])
 }
 
 model Measurement {
@@ -149,6 +160,9 @@ model Measurement {
   @@index([clientId])
   @@index([orderId])
   @@index([isDefault])
+  @@index([createdAt])
+  @@index([clientId, isDefault])
+  @@index([clientId, createdAt])
 }
 
 model StyleImage {
@@ -168,6 +182,9 @@ model StyleImage {
   @@index([clientId])
   @@index([adminId])
   @@index([category])
+  @@index([createdAt])
+  @@index([adminId, createdAt])
+  @@index([clientId, createdAt])
 }
 
 model Event {
