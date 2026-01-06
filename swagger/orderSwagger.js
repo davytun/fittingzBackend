@@ -670,3 +670,115 @@
  *       404:
  *         description: Order or measurement not found
  */
+
+/**
+ * @swagger
+ * /api/v1/clients/{clientId}/orders/{orderId}/images/{imageId}:
+ *   patch:
+ *     summary: Update order image details
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Client ID
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Image ID
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               category:
+ *                 type: string
+ *                 description: Image category
+ *                 example: "formal"
+ *               description:
+ *                 type: string
+ *                 description: Image description
+ *                 example: "Blue evening gown inspiration"
+ *           example:
+ *             category: "formal"
+ *             description: "Updated style reference"
+ *     responses:
+ *       200:
+ *         description: Order image updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Order image updated successfully
+ *                 image:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     category:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     imageUrl:
+ *                       type: string
+ *       404:
+ *         description: Order or image not found
+ *       403:
+ *         description: Access denied
+ *   delete:
+ *     summary: Remove image from order
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: clientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Client ID
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Image ID
+ *     responses:
+ *       200:
+ *         description: Image removed from order successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Image removed from order successfully
+ *       404:
+ *         description: Order or image not found
+ *       403:
+ *         description: Access denied
+ */

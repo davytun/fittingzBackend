@@ -232,4 +232,33 @@ router.delete(
   OrderController.deleteOrder
 );
 
+// Order style image management
+router.patch(
+  "/:clientId/orders/:orderId/images/:imageId",
+  generalApiLimiter,
+  validateIds,
+  [
+    param("imageId")
+      .isString()
+      .notEmpty()
+      .isLength({ min: 25, max: 30 })
+      .withMessage("Invalid image ID format. Must be a valid CUID (25–30 characters)."),
+  ],
+  OrderController.updateOrderImage
+);
+
+router.delete(
+  "/:clientId/orders/:orderId/images/:imageId",
+  generalApiLimiter,
+  validateIds,
+  [
+    param("imageId")
+      .isString()
+      .notEmpty()
+      .isLength({ min: 25, max: 30 })
+      .withMessage("Invalid image ID format. Must be a valid CUID (25–30 characters)."),
+  ],
+  OrderController.removeOrderImage
+);
+
 module.exports = router;

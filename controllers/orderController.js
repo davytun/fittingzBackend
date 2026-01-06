@@ -1171,3 +1171,95 @@ exports.linkMeasurementToOrder = async (req, res, next) => {
     });
   }
 };
+
+// Update order image
+exports.updateOrderImage = async (req, res, next) => {
+  const { orderId, clientId, imageId } = req.params;
+  const { category, description } = req.body;
+  const adminId = req.user.id;
+
+  try {
+    // Verify order exists and belongs to admin
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, adminId: true, clientId: true },
+    });
+
+    if (!order || order.adminId !== adminId || order.clientId !== clientId) {
+      return res.status(404).json({ message: "Order not found or access denied" });
+    }
+
+    // Verify image is linked to this order
+    const orderImage = await prisma.orderStyleImage.findFirst({
+      where: { orderId, styleImageId: imageId },
+      include: { styleImage: true },
+    });
+
+    if (!orderImage) {
+      return res.status(404).json({ message: "Image not found in this order" });
+    }
+
+    // Update the style image
+    const updatedImage = await prisma.styleImage.update({
+      where: { id: imageId },
+      data: {
+        category: category !== undefined ? category : undefined,
+        description: description !== undefined ? description : undefined,
+      },
+    });
+
+    // Clear cache
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${clientId}:*`),
+      cache.del(`order:${orderId}`),
+    ]);
+
+    res.status(200).json({
+      message: "Order image updated successfully",
+      image: updatedImage,
+    });
+  } catch (error) {
+    console.error("Update order image error:", error);
+    res.status(500).json({ message: "Failed to update order image" });
+  }
+};
+
+// Remove image from order
+exports.removeOrderImage = async (req, res, next) => {
+  const { orderId, clientId, imageId } = req.params;
+  const adminId = req.user.id;
+
+  try {
+    // Verify order exists and belongs to admin
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, adminId: true, clientId: true },
+    });
+
+    if (!order || order.adminId !== adminId || order.clientId !== clientId) {
+      return res.status(404).json({ message: "Order not found or access denied" });
+    }
+
+    // Remove image from order
+    const deleted = await prisma.orderStyleImage.deleteMany({
+      where: { orderId, styleImageId: imageId },
+    });
+
+    if (deleted.count === 0) {
+      return res.status(404).json({ message: "Image not found in this order" });
+    }
+
+    // Clear cache
+    await Promise.all([
+      cache.delPattern(`orders:admin:${adminId}:*`),
+      cache.delPattern(`orders:client:${clientId}:*`),
+      cache.del(`order:${orderId}`),
+    ]);
+
+    res.status(200).json({ message: "Image removed from order successfully" });
+  } catch (error) {
+    console.error("Remove order image error:", error);
+    res.status(500).json({ message: "Failed to remove image from order" });
+  }
+};
