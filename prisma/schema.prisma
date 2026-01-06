@@ -8,24 +8,25 @@ datasource db {
 }
 
 model Admin {
-  id                 String              @id @default(cuid())
-  email              String              @unique
-  password           String
-  businessName       String
-  contactPhone       String?
-  businessAddress    String?
-  profileImageUrl    String?
-  isEmailVerified    Boolean             @default(false)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  clients            Client[]
-  Event              Event[]
-  Order              Order[]
-  Project            Project[]
-  styleImages        StyleImage[]
-  verificationTokens VerificationToken[]
-  notifications      Notification[]
-  recentUpdates      RecentUpdate[]
+  id                   String              @id @default(cuid())
+  email                String              @unique
+  password             String
+  businessName         String
+  contactPhone         String?
+  businessAddress      String?
+  profileImageUrl      String?
+  profileImagePublicId String?
+  isEmailVerified      Boolean             @default(false)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  clients              Client[]
+  Event                Event[]
+  Order                Order[]
+  Project              Project[]
+  styleImages          StyleImage[]
+  verificationTokens   VerificationToken[]
+  notifications        Notification[]
+  recentUpdates        RecentUpdate[]
 
   @@index([email])
   @@index([createdAt])
